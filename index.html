@@ -144,8 +144,7 @@ footer{margin-top:24px;padding:20px 0;border-top:1px solid #1f2937;text-align:ce
 </div>
 
 <script>
-const API_URL = "https://worker-production-9154.up.railway.app/api/signals";
-const PROXY_URL = "https://corsproxy.io/?" + encodeURIComponent(API_URL);
+const API_URL = "/api/signals";
 let countdown = null;
 
 function tick() {
@@ -170,21 +169,12 @@ function updateLastUpd() {
 
 async function load() {
   try {
-    // Tenta direto primeiro
-    let r = await fetch(API_URL, {method:"GET", mode:"cors"});
-    if(!r.ok) throw new Error("direct failed");
+    let r = await fetch(API_URL, {method:"GET", cache:"no-store"});
+    if(!r.ok) throw new Error("failed");
     let d = await r.json();
     render(d);
-  } catch(e1) {
-    try {
-      // Fallback para proxy
-      let r = await fetch(PROXY_URL);
-      if(!r.ok) throw new Error("proxy failed");
-      let d = await r.json();
-      render(d);
-    } catch(e2) {
-      document.getElementById("hist").innerHTML = '<tr><td colspan="4" class="empty">API offline. Tentando reconectar...</td></tr>';
-    }
+  } catch(e) {
+    document.getElementById("hist").innerHTML = '<tr><td colspan="4" class="empty">API offline. Tentando reconectar...</td></tr>';
   }
 }
 
