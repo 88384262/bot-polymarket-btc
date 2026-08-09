@@ -32,7 +32,6 @@ header{background:#111827;border-bottom:1px solid #1f2937;padding:12px 0;positio
 .meta-item{background:#0a0e17;border:1px solid #1f2937;border-radius:8px;padding:12px 14px}
 .meta-item .lbl{font-size:0.65rem;color:#6b7280;text-transform:uppercase}
 .meta-item .val{font-size:1rem;font-weight:700;margin-top:2px}
-.meta-item .val.small{font-size:0.8rem;color:#9ca3af}
 
 .ad{background:linear-gradient(135deg,#1a2332,#0f172a);border:1px solid #1f2937;border-radius:12px;padding:18px 24px;margin-top:16px;display:flex;align-items:center;justify-content:space-between;gap:16px}
 @media(max-width:600px){.ad{flex-direction:column;text-align:center}}
@@ -56,7 +55,6 @@ tr:last-child td{border:none}
 .tag.down{background:rgba(239,68,68,0.12);color:#ef4444}
 .hit{color:#22c55e;font-weight:700}
 .miss{color:#ef4444;font-weight:700}
-.pending{color:#9ca3af;font-weight:700}
 
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px}
 .stat{text-align:center}
@@ -98,8 +96,6 @@ footer{margin-top:24px;padding:20px 0;border-top:1px solid #1f2937;text-align:ce
       <div class="meta-item"><div class="lbl">Hora</div><div class="val" id="hora">--:--</div></div>
       <div class="meta-item"><div class="lbl">Expira</div><div class="val" id="exp">--:--</div></div>
       <div class="meta-item"><div class="lbl">Confiança</div><div class="val" id="conf" style="color:#22c55e">--%</div></div>
-      <div class="meta-item"><div class="lbl">RSI</div><div class="val small" id="rsi">--</div></div>
-      <div class="meta-item"><div class="lbl">Momentum</div><div class="val small" id="mom">--</div></div>
     </div>
   </div>
 
@@ -148,9 +144,9 @@ footer{margin-top:24px;padding:20px 0;border-top:1px solid #1f2937;text-align:ce
 </div>
 
 <script>
-const API_URL = "https://worker-production-9154.up.railway.app";
+// USA O PROPRIO DOMINIO DA VERCEL - SEM CORS!
+const API_URL = "/api/signals";
 let countdown = null;
-let lastData = null;
 
 function tick() {
   document.getElementById("hora").textContent = new Date().toLocaleTimeString("pt-BR");
@@ -174,11 +170,11 @@ function updateLastUpd() {
 
 async function load() {
   try {
-    const r = await fetch(API_URL+"/api/signals", {cache: "no-store"});
+    const r = await fetch(API_URL);
     if(!r.ok) throw new Error("HTTP "+r.status);
     const d = await r.json();
-    lastData = d;
-    console.log("[API] Dados recebidos:", d);
+
+    if(d.error) throw new Error(d.error);
 
     const c = d.current;
     const sig = document.getElementById("sig");
@@ -191,8 +187,6 @@ async function load() {
       document.getElementById("conf").style.color = up?"#22c55e":"#ef4444";
       document.getElementById("price").textContent = c.price ? "$"+c.price.toLocaleString("en-US") : "---";
       if(c.expires_in) startExp(...c.expires_in.split(":").map(Number));
-      document.getElementById("rsi").textContent = c.rsi || "--";
-      document.getElementById("mom").textContent = c.mom ? c.mom+"%" : "--";
     } else {
       sig.className = "badge wait";
       sig.textContent = "AGUARDANDO...";
@@ -201,8 +195,6 @@ async function load() {
       document.getElementById("price").textContent = c && c.price ? "$"+c.price.toLocaleString("en-US") : "---";
       document.getElementById("exp").textContent = "--:--";
       if(countdown) clearInterval(countdown);
-      document.getElementById("rsi").textContent = "--";
-      document.getElementById("mom").textContent = "--";
     }
 
     const h = d.history || [];
@@ -213,7 +205,7 @@ async function load() {
         return `<tr><td><span class="tag ${s.type}">${up?"ALTA ↑":"BAIXA ↓"}</span></td><td>${s.confidence}%</td><td style="color:#9ca3af">${s.time}</td><td class="${s.result}">${s.result==="hit"?"✅ ACERTO":"❌ ERRO"}</td></tr>`;
       }).join("");
     } else {
-      tbody.innerHTML = '<tr><td colspan="4" class="empty">Nenhuma aposta registrada ainda.<br>Os sinais aparecem aqui apenas quando o scanner decide apostar.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="4" class="empty">Nenhuma aposta registrada ainda.</td></tr>';
     }
 
     const st = d.stats || {};
@@ -226,14 +218,12 @@ async function load() {
 
   } catch(e) {
     console.error("[API] Erro:", e.message);
-    if(!lastData) {
-      document.getElementById("hist").innerHTML = '<tr><td colspan="4" class="empty">API offline. Tentando reconectar...</td></tr>';
-    }
+    document.getElementById("hist").innerHTML = '<tr><td colspan="4" class="empty">API offline: ' + e.message + '</td></tr>';
   }
 }
 
 load();
-setInterval(load, 5000);  // Atualiza a cada 5 segundos
+setInterval(load, 5000);
 </script>
 
 </body>
