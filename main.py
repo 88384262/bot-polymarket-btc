@@ -1,4 +1,4 @@
-import threading, time, sys, os
+import threading, time, sys, os, asyncio
 
 print("="*60)
 print("BTC SIGNAL PRO - Scanner + Bot + API")
@@ -18,6 +18,9 @@ def run_bot():
     print("[+] Bot Telegram iniciando...")
     try:
         import bot_telegram_railway
+        # Cria event loop para a thread
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         bot_telegram_railway.main()
     except Exception as e:
         print(f"[!] Bot erro: {e}")
@@ -28,7 +31,7 @@ if __name__ == "__main__":
     # Scanner em thread
     threading.Thread(target=run_scanner, daemon=True).start()
 
-    # Bot em thread
+    # Bot em thread (com event loop proprio)
     threading.Thread(target=run_bot, daemon=True).start()
 
     # API Flask RODA NO PROCESSO PRINCIPAL
