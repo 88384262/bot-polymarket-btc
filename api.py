@@ -1,5 +1,7 @@
 from flask import Flask, jsonify, make_response, request, send_from_directory
-import json, os, time
+import json
+import os
+import time
 
 app = Flask(__name__)
 
@@ -75,20 +77,27 @@ def signals():
     }))
     return add_cors(response)
 
-@app.route("/", methods=["GET", "OPTIONS"])
-def home():
-    if request.method == "OPTIONS":
-        response = make_response("", 204)
-        return add_cors(response)
-    response = make_response("BTC Signal Pro API - Online")
-    return add_cors(response)
+@app.route("/api/health", methods=["GET"])
+def health():
+    atual = ler_json(ARQ_ATUAL, {})
+    tem_dados = bool(atual.get("sinal"))
+    ts = atual.get("timestamp_abertura", 0)
+    idade = int(time.time() - ts) if ts else 9999
+    return add_cors(make_response(jsonify({
+        "status": "ok",
+        "scanner_online": tem_dados and idade < 600,
+        "last_update": idade
+    })))
 
 @app.route("/", methods=["GET"])
 def home():
-    return send_from_directory(".", "index.html")
+    try:
+        return send_from_directory(".", "index.html")
+    except:
+        return add_cors(make_response("BTC Signal Pro API - Online"))
 
 @app.route("/health", methods=["GET"])
-def health():
+def health_simple():
     return add_cors(make_response(jsonify({"status":"ok"})))
 
 def run_api():
