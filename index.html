@@ -32,6 +32,7 @@ header{background:#111827;border-bottom:1px solid #1f2937;padding:12px 0;positio
 .meta-item{background:#0a0e17;border:1px solid #1f2937;border-radius:8px;padding:12px 14px}
 .meta-item .lbl{font-size:0.65rem;color:#6b7280;text-transform:uppercase}
 .meta-item .val{font-size:1rem;font-weight:700;margin-top:2px}
+.meta-item .val.small{font-size:0.8rem;color:#9ca3af}
 
 .ad{background:linear-gradient(135deg,#1a2332,#0f172a);border:1px solid #1f2937;border-radius:12px;padding:18px 24px;margin-top:16px;display:flex;align-items:center;justify-content:space-between;gap:16px}
 @media(max-width:600px){.ad{flex-direction:column;text-align:center}}
@@ -43,7 +44,8 @@ header{background:#111827;border-bottom:1px solid #1f2937;padding:12px 0;positio
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
 @media(max-width:700px){.grid{grid-template-columns:1fr}}
 .card{background:#111827;border:1px solid #1f2937;border-radius:12px;overflow:hidden}
-.card-hd{padding:14px 16px;border-bottom:1px solid #1f2937;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
+.card-hd{padding:14px 16px;border-bottom:1px solid #1f2937;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;display:flex;justify-content:space-between;align-items:center}
+.last-upd{font-size:0.65rem;color:#6b7280;font-weight:400}
 table{width:100%;border-collapse:collapse;font-size:0.82rem}
 th,td{padding:10px 14px;text-align:left}
 th{color:#6b7280;font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid #1f2937}
@@ -54,6 +56,7 @@ tr:last-child td{border:none}
 .tag.down{background:rgba(239,68,68,0.12);color:#ef4444}
 .hit{color:#22c55e;font-weight:700}
 .miss{color:#ef4444;font-weight:700}
+.pending{color:#9ca3af;font-weight:700}
 
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px}
 .stat{text-align:center}
@@ -64,8 +67,10 @@ tr:last-child td{border:none}
 .stat .l{font-size:0.6rem;color:#6b7280;text-transform:uppercase;margin-top:2px}
 
 .loading{text-align:center;padding:30px;color:#6b7280}
+.empty{text-align:center;padding:20px;color:#6b7280;font-size:0.85rem}
 footer{margin-top:24px;padding:20px 0;border-top:1px solid #1f2937;text-align:center;color:#6b7280;font-size:0.75rem}
 </style>
+<base target="_blank">
 </head>
 <body>
 
@@ -93,6 +98,8 @@ footer{margin-top:24px;padding:20px 0;border-top:1px solid #1f2937;text-align:ce
       <div class="meta-item"><div class="lbl">Hora</div><div class="val" id="hora">--:--</div></div>
       <div class="meta-item"><div class="lbl">Expira</div><div class="val" id="exp">--:--</div></div>
       <div class="meta-item"><div class="lbl">Confiança</div><div class="val" id="conf" style="color:#22c55e">--%</div></div>
+      <div class="meta-item"><div class="lbl">RSI</div><div class="val small" id="rsi">--</div></div>
+      <div class="meta-item"><div class="lbl">Momentum</div><div class="val small" id="mom">--</div></div>
     </div>
   </div>
 
@@ -107,7 +114,10 @@ footer{margin-top:24px;padding:20px 0;border-top:1px solid #1f2937;text-align:ce
 
   <div class="grid">
     <div class="card">
-      <div class="card-hd">📊 Últimos Sinais BTC</div>
+      <div class="card-hd">
+        📊 Últimos Sinais BTC
+        <span class="last-upd" id="lastUpd">Atualizando...</span>
+      </div>
       <table>
         <thead><tr><th>Sinal</th><th>Conf.</th><th>Hora</th><th>Res.</th></tr></thead>
         <tbody id="hist"><tr><td colspan="4" class="loading">Carregando...</td></tr></tbody>
@@ -139,8 +149,8 @@ footer{margin-top:24px;padding:20px 0;border-top:1px solid #1f2937;text-align:ce
 
 <script>
 const API_URL = "https://worker-production-9154.up.railway.app";
-
 let countdown = null;
+let lastData = null;
 
 function tick() {
   document.getElementById("hora").textContent = new Date().toLocaleTimeString("pt-BR");
@@ -151,32 +161,49 @@ function startExp(m,s) {
   if(countdown) clearInterval(countdown);
   const el = document.getElementById("exp");
   countdown = setInterval(()=>{
-    if(s>0)s--; else if(m>0){m--;s=59;} else {clearInterval(countdown);return;}
+    if(s>0){s--;} else if(m>0){m--;s=59;} else {clearInterval(countdown);el.textContent="00:00";return;}
     el.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
   },1000);
+  el.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+}
+
+function updateLastUpd() {
+  const now = new Date();
+  document.getElementById("lastUpd").textContent = "Atualizado " + now.toLocaleTimeString("pt-BR");
 }
 
 async function load() {
   try {
-    const r = await fetch(API_URL+"/api/signals");
-    if(!r.ok) throw new Error("off");
+    const r = await fetch(API_URL+"/api/signals", {cache: "no-store"});
+    if(!r.ok) throw new Error("HTTP "+r.status);
     const d = await r.json();
+    lastData = d;
+    console.log("[API] Dados recebidos:", d);
 
     const c = d.current;
     const sig = document.getElementById("sig");
+
     if(c && c.type && c.type !== "neutral") {
       const up = c.type === "up";
       sig.className = "badge " + (up?"up":"down");
       sig.textContent = up ? "ALTA ↑" : "BAIXA ↓";
       document.getElementById("conf").textContent = c.confidence+"%";
       document.getElementById("conf").style.color = up?"#22c55e":"#ef4444";
+      document.getElementById("price").textContent = c.price ? "$"+c.price.toLocaleString("en-US") : "---";
       if(c.expires_in) startExp(...c.expires_in.split(":").map(Number));
+      document.getElementById("rsi").textContent = c.rsi || "--";
+      document.getElementById("mom").textContent = c.mom ? c.mom+"%" : "--";
     } else {
       sig.className = "badge wait";
       sig.textContent = "AGUARDANDO...";
       document.getElementById("conf").textContent = "--%";
+      document.getElementById("conf").style.color = "#6b7280";
+      document.getElementById("price").textContent = c && c.price ? "$"+c.price.toLocaleString("en-US") : "---";
+      document.getElementById("exp").textContent = "--:--";
+      if(countdown) clearInterval(countdown);
+      document.getElementById("rsi").textContent = "--";
+      document.getElementById("mom").textContent = "--";
     }
-    document.getElementById("price").textContent = c && c.price ? "$"+c.price.toLocaleString("en-US") : "---";
 
     const h = d.history || [];
     const tbody = document.getElementById("hist");
@@ -186,7 +213,7 @@ async function load() {
         return `<tr><td><span class="tag ${s.type}">${up?"ALTA ↑":"BAIXA ↓"}</span></td><td>${s.confidence}%</td><td style="color:#9ca3af">${s.time}</td><td class="${s.result}">${s.result==="hit"?"✅ ACERTO":"❌ ERRO"}</td></tr>`;
       }).join("");
     } else {
-      tbody.innerHTML = '<tr><td colspan="4" class="loading">Sem historico ainda</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="4" class="empty">Nenhuma aposta registrada ainda.<br>Os sinais aparecem aqui apenas quando o scanner decide apostar.</td></tr>';
     }
 
     const st = d.stats || {};
@@ -195,13 +222,18 @@ async function load() {
     document.getElementById("stMiss").textContent = st.misses || 0;
     document.getElementById("stRate").textContent = (st.rate||0)+"%";
 
+    updateLastUpd();
+
   } catch(e) {
-    console.log("API off:",e.message);
+    console.error("[API] Erro:", e.message);
+    if(!lastData) {
+      document.getElementById("hist").innerHTML = '<tr><td colspan="4" class="empty">API offline. Tentando reconectar...</td></tr>';
+    }
   }
 }
 
 load();
-setInterval(load, 10000);
+setInterval(load, 5000);  // Atualiza a cada 5 segundos
 </script>
 
 </body>
