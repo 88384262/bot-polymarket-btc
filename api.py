@@ -1,9 +1,10 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, make_response
 import json, os, time
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)
+# CORS mais permissivo
+CORS(app, resources={r"/api/*": {"origins": "*", "methods": ["GET", "OPTIONS"], "allow_headers": "*"}})
 
 ARQ_MERC = os.getenv("ARQ_MERC", "btc_mercados_v21.json")
 ARQ_MOD = os.getenv("ARQ_MOD", "btc_modelo_v21.json")
@@ -22,7 +23,6 @@ def signals():
     mercados = ler_json(ARQ_MERC, [])
     modelo = ler_json(ARQ_MOD, {"acertos":0,"erros":0,"bank":0})
 
-    # Sinal atual
     sinal = atual.get("sinal","")
     current = None
     if sinal in ("UP","DOWN"):
@@ -39,13 +39,11 @@ def signals():
             "mom": round(atual.get("mom",0.0),4)
         }
 
-    # Historico - SO mercados onde REALMENTE apostou
     history = []
     for m in reversed(mercados):
         s = m.get("sinal","")
         if not s: continue
         a = m.get("apostou",False)
-        # So inclui se realmente apostou
         if not a: continue
         r = m.get("resultado","")
         res = "hit" if s==r else "miss"
@@ -59,21 +57,25 @@ def signals():
             "result": res
         })
 
-    # Limita a 10 no historico
     history = history[:10]
 
-    # Stats baseado apenas em apostas reais
     hits = modelo.get("acertos",0)
     misses = modelo.get("erros",0)
     total = hits + misses
     rate = round((hits/total)*100,2) if total else 0
 
-    return jsonify({
+    response = make_response(jsonify({
         "current": current,
         "history": history,
         "stats": {"total":total,"hits":hits,"misses":misses,"rate":rate},
         "server_time": time.time()
-    })
+    }))
+    # Headers CORS explicitos
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    return response
 
 @app.route("/")
 def home():
