@@ -149,11 +149,10 @@ footer{margin-top:24px;padding:20px 0;border-top:1px solid #1f2937;text-align:ce
 </div>
 
 <script>
-// ===== URL DA API NA RAILWAY =====
-const API_URL = "https://worker-production-9154.up.railway.app/api/signals";
-const HEALTH_URL = "https://worker-production-9154.up.railway.app/api/health";
+// ===== URL RELATIVA — FUNCIONA NO MESMO DOMINIO (Railway) =====
+// Se estiver no Vercel com proxy, tambem funciona porque /api/* redireciona
+const API_URL = "/api/signals";
 
-const PROXY_URL = "https://corsproxy.io/?" + encodeURIComponent(API_URL);
 let countdown = null;
 
 function tick() {
@@ -189,20 +188,14 @@ function setScannerStatus(online, message) {
 
 async function load() {
   try {
-    let r = await fetch(API_URL, {method:"GET", mode:"cors"});
-    if(!r.ok) throw new Error("direct failed");
+    let r = await fetch(API_URL);
+    if(!r.ok) throw new Error("fetch failed: " + r.status);
     let d = await r.json();
     render(d);
-  } catch(e1) {
-    try {
-      let r = await fetch(PROXY_URL);
-      if(!r.ok) throw new Error("proxy failed");
-      let d = await r.json();
-      render(d);
-    } catch(e2) {
-      document.getElementById("hist").innerHTML = '<tr><td colspan="4" class="empty">API offline. Tentando reconectar...</td></tr>';
-      setScannerStatus(false, "API offline - Tentando reconectar...");
-    }
+  } catch(e) {
+    console.error("Erro ao carregar API:", e);
+    document.getElementById("hist").innerHTML = '<tr><td colspan="4" class="empty">API offline. Tentando reconectar...</td></tr>';
+    setScannerStatus(false, "API offline - Tentando reconectar...");
   }
 }
 
@@ -227,7 +220,7 @@ function render(d) {
     document.getElementById("price").textContent = c && c.price ? "$"+c.price.toLocaleString("en-US") : "---";
     document.getElementById("exp").textContent = "--:--";
     if(countdown) clearInterval(countdown);
-    setScannerStatus(false, "Scanner offline ou sem sinal ativo");
+    setScannerStatus(false, "Aguardando proximo sinal...");
   }
 
   const h = d.history || [];
