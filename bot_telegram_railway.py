@@ -719,7 +719,7 @@ def main():
     log("Bot iniciado! Pressione Ctrl+C para parar.", 'green')
     log("=" * 60, 'cyan')
 
-    application.run_polling()
+    application.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
     main()
