@@ -4,6 +4,27 @@ print("="*60)
 print("BTC SIGNAL PRO - Scanner + Bot + API")
 print("="*60)
 
+# Evita multiplas instancias do bot
+LOCK_FILE = "/tmp/bot.lock"
+
+def check_lock():
+    if os.path.exists(LOCK_FILE):
+        try:
+            with open(LOCK_FILE, 'r') as f:
+                pid = int(f.read().strip())
+            # Verifica se o processo ainda existe
+            os.kill(pid, 0)
+            print(f"[!] Outra instancia do bot ja esta rodando (PID {pid})")
+            print("[!] Aguardando 30s para tentar novamente...")
+            time.sleep(30)
+            return check_lock()
+        except (OSError, ValueError):
+            # Processo nao existe mais, remove lock
+            os.remove(LOCK_FILE)
+    with open(LOCK_FILE, 'w') as f:
+        f.write(str(os.getpid()))
+    return True
+
 def run_scanner():
     print("[+] Scanner iniciando...")
     try:
@@ -21,7 +42,7 @@ def run_bot():
         bot_telegram_railway.main()
     except Exception as e:
         print(f"[!] Bot erro: {e}")
-        time.sleep(10)
+        time.sleep(15)
         run_bot()
 
 def run_api():
@@ -29,16 +50,16 @@ def run_api():
     try:
         import api
         api.run_api()
-        print("[+] API iniciada com sucesso!")
     except Exception as e:
-        print(f"[!] API erro (continuando sem API): {e}")
-        # Nao reinicia - continua sem API se der erro
+        print(f"[!] API erro: {e}")
 
 if __name__ == "__main__":
+    check_lock()
+
     # Scanner em thread
     threading.Thread(target=run_scanner, daemon=True).start()
 
-    # API em thread (se falhar, nao quebra o bot)
+    # API em thread
     threading.Thread(target=run_api, daemon=True).start()
 
     # Bot na thread principal
