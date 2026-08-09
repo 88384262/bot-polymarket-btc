@@ -1,4 +1,4 @@
-import threading, time, sys, os, asyncio
+import threading, time, sys, os
 
 print("="*60)
 print("BTC SIGNAL PRO - Scanner + Bot + API")
@@ -14,33 +14,30 @@ def run_scanner():
         time.sleep(10)
         run_scanner()
 
-def run_bot():
-    print("[+] Bot Telegram iniciando...")
-    try:
-        import bot_telegram_railway
-        # Cria event loop para a thread
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        bot_telegram_railway.main()
-    except Exception as e:
-        print(f"[!] Bot erro: {e}")
-        time.sleep(15)
-        run_bot()
-
-if __name__ == "__main__":
-    # Scanner em thread
-    threading.Thread(target=run_scanner, daemon=True).start()
-
-    # Bot em thread (com event loop proprio)
-    threading.Thread(target=run_bot, daemon=True).start()
-
-    # API Flask RODA NO PROCESSO PRINCIPAL
-    print("[+] API Web iniciando no processo principal...")
+def run_api():
+    print("[+] API Web iniciando...")
     try:
         import api
         port = int(os.environ.get("PORT", 5000))
         print(f"[API] Iniciando na porta {port}...")
         api.app.run(host="0.0.0.0", port=port, threaded=True, debug=False, use_reloader=False)
     except Exception as e:
-        print(f"[!] API erro fatal: {e}")
+        print(f"[!] API erro: {e}")
+        time.sleep(10)
+        run_api()
+
+if __name__ == "__main__":
+    # Scanner em thread
+    threading.Thread(target=run_scanner, daemon=True).start()
+
+    # API em thread (Flask funciona bem em thread)
+    threading.Thread(target=run_api, daemon=True).start()
+
+    # Bot Telegram RODA NA THREAD PRINCIPAL (precisa de asyncio)
+    print("[+] Bot Telegram iniciando na thread principal...")
+    try:
+        import bot_telegram_railway
+        bot_telegram_railway.main()
+    except Exception as e:
+        print(f"[!] Bot erro fatal: {e}")
         time.sleep(5)
