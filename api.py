@@ -3,31 +3,29 @@ import json, os, time
 
 app = Flask(__name__)
 
-# Headers CORS em TODAS as respostas
-@app.after_request
-def after_request(response):
-    response.headers.add("Access-Control-Allow-Origin", "*")
-    response.headers.add("Access-Control-Allow-Headers", "*")
-    response.headers.add("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-    response.headers.add("Cache-Control", "no-cache, no-store, must-revalidate")
+ARQ_MERC = os.getenv("ARQ_MERC", "btc_mercados_v21.json")
+ARQ_MOD = os.getenv("ARQ_MOD", "btc_modelo_v21.json")
+ARQ_ATUAL = os.getenv("ARQ_MERCADO_ATUAL", "btc_mercado_atual.json")
+
+def ler_json(caminho, padrao={}):
+    try:
+        with open(caminho, 'r') as f:
+            return json.load(f)
+    except:
+        return padrao
+
+def add_cors(response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    response.headers["Cache-Control"] = "no-cache"
     return response
 
-# Responde preflight OPTIONS
 @app.route("/api/signals", methods=["GET", "OPTIONS"])
 def signals():
     if request.method == "OPTIONS":
-        return make_response("", 204)
-
-    ARQ_MERC = os.getenv("ARQ_MERC", "btc_mercados_v21.json")
-    ARQ_MOD = os.getenv("ARQ_MOD", "btc_modelo_v21.json")
-    ARQ_ATUAL = os.getenv("ARQ_MERCADO_ATUAL", "btc_mercado_atual.json")
-
-    def ler_json(caminho, padrao={}):
-        try:
-            with open(caminho, 'r') as f:
-                return json.load(f)
-        except:
-            return padrao
+        response = make_response("", 204)
+        return add_cors(response)
 
     atual = ler_json(ARQ_ATUAL, {})
     mercados = ler_json(ARQ_MERC, [])
@@ -65,34 +63,32 @@ def signals():
         })
 
     history = history[:10]
-
     hits = modelo.get("acertos",0)
     misses = modelo.get("erros",0)
     total = hits + misses
     rate = round((hits/total)*100,2) if total else 0
 
-    return jsonify({
+    response = make_response(jsonify({
         "current": current,
         "history": history,
-        "stats": {"total":total,"hits":hits,"misses":misses,"rate":rate},
-        "server_time": time.time()
-    })
+        "stats": {"total":total,"hits":hits,"misses":misses,"rate":rate}
+    }))
+    return add_cors(response)
 
 @app.route("/", methods=["GET", "OPTIONS"])
 def home():
     if request.method == "OPTIONS":
-        return make_response("", 204)
-    return "BTC Signal Pro API - Online"
+        response = make_response("", 204)
+        return add_cors(response)
+    response = make_response("BTC Signal Pro API - Online")
+    return add_cors(response)
 
 def run_api():
     import threading
     port = int(os.environ.get("PORT", 5000))
     print(f"[API] Iniciando na porta {port}...")
     def _run():
-        try:
-            app.run(host="0.0.0.0", port=port, threaded=True, debug=False, use_reloader=False)
-        except Exception as e:
-            print(f"[API] Erro no servidor: {e}")
+        app.run(host="0.0.0.0", port=port, threaded=True, debug=False, use_reloader=False)
     t = threading.Thread(target=_run, daemon=True)
     t.start()
     print(f"[API] Servidor iniciado em http://0.0.0.0:{port}")
