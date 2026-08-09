@@ -1,47 +1,45 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-POLYMARKET BTC - SCANNER + BOT TELEGRAM (NUVEM)
-Roda scanner e bot juntos no Railway.
-O scanner salva btc_mercado_atual.json e o bot le em tempo real.
-"""
+import threading, time, sys, os
 
-import threading
-import time
-import sys
+print("="*60)
+print("BTC SIGNAL PRO - Scanner + Bot + API")
+print("="*60)
 
-print("=" * 60)
-print("INICIANDO SISTEMA POLYMARKET BTC NA NUVEM")
-print("Scanner + Bot Telegram rodando juntos")
-print("=" * 60)
-
-# Importa e roda o scanner em thread separada
 def run_scanner():
-    print("[NUVEM] Iniciando Scanner...")
+    print("[+] Scanner iniciando...")
     try:
         import scanner_railway
         scanner_railway.main()
     except Exception as e:
-        print(f"[ERRO SCANNER] {e}")
+        print(f"[!] Scanner erro: {e}")
         time.sleep(10)
-        run_scanner()  # Restart
+        run_scanner()
 
-# Importa e roda o bot em thread separada
 def run_bot():
-    print("[NUVEM] Iniciando Bot Telegram...")
+    print("[+] Bot Telegram iniciando...")
     try:
-        import asyncio
         import bot_telegram_railway
         bot_telegram_railway.main()
     except Exception as e:
-        print(f"[ERRO BOT] {e}")
+        print(f"[!] Bot erro: {e}")
         time.sleep(10)
-        run_bot()  # Restart
+        run_bot()
+
+def run_api():
+    print("[+] API Web iniciando...")
+    try:
+        import api
+        api.run_api()
+        print("[+] API iniciada com sucesso!")
+    except Exception as e:
+        print(f"[!] API erro (continuando sem API): {e}")
+        # Nao reinicia - continua sem API se der erro
 
 if __name__ == "__main__":
     # Scanner em thread
-    t_scanner = threading.Thread(target=run_scanner, daemon=True)
-    t_scanner.start()
+    threading.Thread(target=run_scanner, daemon=True).start()
+
+    # API em thread (se falhar, nao quebra o bot)
+    threading.Thread(target=run_api, daemon=True).start()
 
     # Bot na thread principal
     run_bot()

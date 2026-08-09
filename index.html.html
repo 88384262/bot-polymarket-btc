@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BTC Signal Pro</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0e17;color:#f3f4f6;font-family:system-ui,sans-serif;min-height:100vh}
+.container{max-width:1100px;margin:0 auto;padding:16px}
+header{background:#111827;border-bottom:1px solid #1f2937;padding:12px 0;position:sticky;top:0;z-index:100}
+.header-inner{display:flex;align-items:center;justify-content:space-between;max-width:1100px;margin:0 auto;padding:0 16px}
+.logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:1.2rem;text-decoration:none;color:#f3f4f6}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,#22c55e,#16a34a);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.9rem}
+.logo span{color:#22c55e}
+.status{display:flex;align-items:center;gap:6px;font-size:0.75rem;color:#22c55e;font-weight:600}
+.dot{width:8px;height:8px;background:#22c55e;border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+.hero{background:#111827;border:1px solid #1f2937;border-radius:12px;padding:24px;margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:700px){.hero{grid-template-columns:1fr}}
+.signal-main{display:flex;align-items:center;gap:16px}
+.btc{width:56px;height:56px;background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:800;color:#fff}
+.signal-info h2{font-size:1.3rem}
+.signal-info .sub{color:#9ca3af;font-size:0.85rem}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:8px 20px;border-radius:8px;font-size:1.2rem;font-weight:800;margin-top:10px}
+.badge.up{background:rgba(34,197,94,0.12);color:#22c55e;border:1px solid rgba(34,197,94,0.25)}
+.badge.down{background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.25)}
+.badge.wait{background:rgba(107,114,128,0.12);color:#6b7280;border:1px solid rgba(107,114,128,0.25)}
+
+.meta{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.meta-item{background:#0a0e17;border:1px solid #1f2937;border-radius:8px;padding:12px 14px}
+.meta-item .lbl{font-size:0.65rem;color:#6b7280;text-transform:uppercase}
+.meta-item .val{font-size:1rem;font-weight:700;margin-top:2px}
+
+.ad{background:linear-gradient(135deg,#1a2332,#0f172a);border:1px solid #1f2937;border-radius:12px;padding:18px 24px;margin-top:16px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+@media(max-width:600px){.ad{flex-direction:column;text-align:center}}
+.ad .ad-lbl{font-size:0.6rem;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.ad h4{font-size:0.95rem}
+.ad p{color:#9ca3af;font-size:0.8rem}
+.ad a{background:#3b82f6;color:#fff;padding:8px 18px;border-radius:8px;font-size:0.8rem;font-weight:600;text-decoration:none}
+
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+@media(max-width:700px){.grid{grid-template-columns:1fr}}
+.card{background:#111827;border:1px solid #1f2937;border-radius:12px;overflow:hidden}
+.card-hd{padding:14px 16px;border-bottom:1px solid #1f2937;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
+table{width:100%;border-collapse:collapse;font-size:0.82rem}
+th,td{padding:10px 14px;text-align:left}
+th{color:#6b7280;font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid #1f2937}
+td{border-bottom:1px solid #1f2937}
+tr:last-child td{border:none}
+.tag{display:inline-flex;padding:3px 8px;border-radius:5px;font-size:0.7rem;font-weight:700}
+.tag.up{background:rgba(34,197,94,0.12);color:#22c55e}
+.tag.down{background:rgba(239,68,68,0.12);color:#ef4444}
+.hit{color:#22c55e;font-weight:700}
+.miss{color:#ef4444;font-weight:700}
+
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px}
+.stat{text-align:center}
+.stat .n{font-size:1.3rem;font-weight:800}
+.stat .n.g{color:#22c55e}
+.stat .n.r{color:#ef4444}
+.stat .n.b{color:#3b82f6}
+.stat .l{font-size:0.6rem;color:#6b7280;text-transform:uppercase;margin-top:2px}
+
+.loading{text-align:center;padding:30px;color:#6b7280}
+footer{margin-top:24px;padding:20px 0;border-top:1px solid #1f2937;text-align:center;color:#6b7280;font-size:0.75rem}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="#" class="logo"><div class="logo-icon">📈</div>BTC <span>SIGNAL</span> PRO</a>
+    <div class="status"><span class="dot"></span>AO VIVO</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="hero">
+    <div class="signal-main">
+      <div class="btc">₿</div>
+      <div class="signal-info">
+        <div class="status" style="margin-bottom:6px"><span class="dot"></span>SINAL ATUAL</div>
+        <h2>BTC / USDT</h2>
+        <div class="sub">5 min • Polymarket</div>
+        <div class="badge wait" id="sig">CARREGANDO...</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-item"><div class="lbl">Preço</div><div class="val" id="price">---</div></div>
+      <div class="meta-item"><div class="lbl">Hora</div><div class="val" id="hora">--:--</div></div>
+      <div class="meta-item"><div class="lbl">Expira</div><div class="val" id="exp">--:--</div></div>
+      <div class="meta-item"><div class="lbl">Confiança</div><div class="val" id="conf" style="color:#22c55e">--%</div></div>
+    </div>
+  </div>
+
+  <div class="ad">
+    <div>
+      <div class="ad-lbl">Publicidade</div>
+      <h4>Negocie com SEGURANÇA</h4>
+      <p>Plataforma confiável, rápida e com as menores taxas.</p>
+    </div>
+    <a href="#">Abra sua conta</a>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="card-hd">📊 Últimos Sinais BTC</div>
+      <table>
+        <thead><tr><th>Sinal</th><th>Conf.</th><th>Hora</th><th>Res.</th></tr></thead>
+        <tbody id="hist"><tr><td colspan="4" class="loading">Carregando...</td></tr></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-hd">📈 Desempenho</div>
+      <div class="stats">
+        <div class="stat"><div class="n b" id="stTotal">--</div><div class="l">Sinais</div></div>
+        <div class="stat"><div class="n g" id="stHits">--</div><div class="l">Acertos</div></div>
+        <div class="stat"><div class="n r" id="stMiss">--</div><div class="l">Erros</div></div>
+        <div class="stat"><div class="n g" id="stRate">--%</div><div class="l">Taxa</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ad">
+    <div>
+      <div class="ad-lbl">Publicidade</div>
+      <h4>Invista com <span style="color:#3b82f6">INTELIGÊNCIA</span></h4>
+      <p>Ferramentas profissionais para traders.</p>
+    </div>
+    <a href="#">Saiba mais</a>
+  </div>
+
+  <footer>© 2026 BTC Signal Pro • <a href="#" style="color:#6b7280">Telegram</a></footer>
+
+</div>
+
+<script>
+const API_URL = "https://worker-production-9154.up.railway.app";
+
+let countdown = null;
+
+function tick() {
+  document.getElementById("hora").textContent = new Date().toLocaleTimeString("pt-BR");
+}
+setInterval(tick, 1000); tick();
+
+function startExp(m,s) {
+  if(countdown) clearInterval(countdown);
+  const el = document.getElementById("exp");
+  countdown = setInterval(()=>{
+    if(s>0)s--; else if(m>0){m--;s=59;} else {clearInterval(countdown);return;}
+    el.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  },1000);
+}
+
+async function load() {
+  try {
+    const r = await fetch(API_URL+"/api/signals");
+    if(!r.ok) throw new Error("off");
+    const d = await r.json();
+
+    const c = d.current;
+    const sig = document.getElementById("sig");
+    if(c && c.type && c.type !== "neutral") {
+      const up = c.type === "up";
+      sig.className = "badge " + (up?"up":"down");
+      sig.textContent = up ? "ALTA ↑" : "BAIXA ↓";
+      document.getElementById("conf").textContent = c.confidence+"%";
+      document.getElementById("conf").style.color = up?"#22c55e":"#ef4444";
+      if(c.expires_in) startExp(...c.expires_in.split(":").map(Number));
+    } else {
+      sig.className = "badge wait";
+      sig.textContent = "AGUARDANDO...";
+      document.getElementById("conf").textContent = "--%";
+    }
+    document.getElementById("price").textContent = c && c.price ? "$"+c.price.toLocaleString("en-US") : "---";
+
+    const h = d.history || [];
+    const tbody = document.getElementById("hist");
+    if(h.length) {
+      tbody.innerHTML = h.map(s=>{
+        const up = s.type==="up";
+        return `<tr><td><span class="tag ${s.type}">${up?"ALTA ↑":"BAIXA ↓"}</span></td><td>${s.confidence}%</td><td style="color:#9ca3af">${s.time}</td><td class="${s.result}">${s.result==="hit"?"✅ ACERTO":"❌ ERRO"}</td></tr>`;
+      }).join("");
+    } else {
+      tbody.innerHTML = '<tr><td colspan="4" class="loading">Sem historico ainda</td></tr>';
+    }
+
+    const st = d.stats || {};
+    document.getElementById("stTotal").textContent = st.total || 0;
+    document.getElementById("stHits").textContent = st.hits || 0;
+    document.getElementById("stMiss").textContent = st.misses || 0;
+    document.getElementById("stRate").textContent = (st.rate||0)+"%";
+
+  } catch(e) {
+    console.log("API off:",e.message);
+  }
+}
+
+load();
+setInterval(load, 10000);
+</script>
+
+</body>
+</html>
