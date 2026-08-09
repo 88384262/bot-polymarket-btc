@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-BOT TELEGRAM - SINAIS POLYMARKET BTC v5.0 (2 ESTAGIOS: AGUARDE + ULTIMO MINUTO)
+BOT TELEGRAM - SINAIS POLYMARKET BTC v5.1 (2 ESTAGIOS: AGUARDE + ULTIMO MINUTO)
 - Estagio 1: "AGUARDE UP/DOWN" quando scanner detecta tendencia
 - Estagio 2: "APOSTAR AGORA" no ultimo minuto (mais seguro)
 - Pagamento via Pix REAL pelo Mercado Pago
@@ -15,10 +15,10 @@ CONFIGURACAO:
     3. ADMIN_ID opcional (linha 39)
 
 COMANDOS:
-    /start      - Boas-vindas
-    /comprar    - Comprar acesso
-    /status     - Verificar status
-    /pix        - Gerar Pix
+    /start - Boas-vindas
+    /comprar - Comprar acesso
+    /status - Verificar status
+    /pix - Gerar Pix
 """
 
 import json
@@ -239,7 +239,7 @@ def calcular_crc16(payload):
                 crc = (crc << 1) ^ polinomio
             else:
                 crc <<= 1
-            crc &= 0xFFFF
+        crc &= 0xFFFF
     return crc
 
 # ============================================================================
@@ -255,8 +255,8 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"👋 Ola, {user.first_name}!\n\n"
             f"✅ *Acesso Ativo!*\n"
             f"📊 Voce recebera sinais em *2 estagios*:\n"
-            f"   1️⃣ *AGUARDE* — quando o scanner detecta tendencia\n"
-            f"   2️⃣ *APOSTAR AGORA* — no *ULTIMO MINUTO* (mais seguro)\n\n"
+            f"    1️⃣ *AGUARDE* — quando o scanner detecta tendencia\n"
+            f"    2️⃣ *APOSTAR AGORA* — no *ULTIMO MINUTO* (mais seguro)\n\n"
             f"⚠️ A analise pode mudar ate o fechamento!\n"
             f"📈 Fique atento ao chat!",
             reply_markup=reply_markup, parse_mode='Markdown'
@@ -271,8 +271,8 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"👋 Ola, {user.first_name}!\n\n"
             f"🤖 *Bot de Sinais Polymarket BTC*\n\n"
             f"📈 Receba sinais em *2 estagios*:\n"
-            f"   1️⃣ *AGUARDE UP/DOWN* — tendencia detectada\n"
-            f"   2️⃣ *APOSTAR AGORA* — no *ULTIMO MINUTO* (mais seguro)\n\n"
+            f"    1️⃣ *AGUARDE UP/DOWN* — tendencia detectada\n"
+            f"    2️⃣ *APOSTAR AGORA* — no *ULTIMO MINUTO* (mais seguro)\n\n"
             f"💳 *Plano:* R${VALOR_PIX:.2f} por {DIAS_ACESSO} dias\n"
             f"✅ Pagamento via *PIX* (Mercado Pago)\n"
             f"⚡ Liberacao automatica apos confirmacao\n\n"
@@ -288,8 +288,8 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"✅ *Acesso Ativo!*\n\n"
             f"📅 Dias restantes: *{dias}*\n"
             f"📊 Sinais em *2 estagios*:\n"
-            f"   1️⃣ *AGUARDE* — tendencia detectada\n"
-            f"   2️⃣ *APOSTAR AGORA* — ultimo minuto (mais seguro)\n\n"
+            f"    1️⃣ *AGUARDE* — tendencia detectada\n"
+            f"    2️⃣ *APOSTAR AGORA* — ultimo minuto (mais seguro)\n\n"
             f"⚠️ A analise pode mudar ate o fechamento!\n"
             f"⏰ Fique atento ao chat!",
             parse_mode='Markdown'
@@ -360,8 +360,8 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"✅ *Acesso Ativo!*\n\n"
                 f"📅 Dias restantes: *{dias}*\n"
                 f"📊 Sinais em *2 estagios*:\n"
-                f"   1️⃣ *AGUARDE* — tendencia detectada\n"
-                f"   2️⃣ *APOSTAR AGORA* — ultimo minuto (mais seguro)\n\n"
+                f"    1️⃣ *AGUARDE* — tendencia detectada\n"
+                f"    2️⃣ *APOSTAR AGORA* — ultimo minuto (mais seguro)\n\n"
                 f"⚠️ A analise pode mudar ate o fechamento!",
                 parse_mode='Markdown'
             )
@@ -414,7 +414,7 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             pendentes = carregar_pendentes()
             if str(user_id) in pendentes:
                 del pendentes[str(user_id)]
-            salvar_pendentes(pendentes)
+                salvar_pendentes(pendentes)
             await query.edit_message_text(
                 f"🎉 *Pagamento Confirmado!*\n\n"
                 f"✅ Acesso liberado por *{DIAS_ACESSO} dias*.\n"
@@ -460,13 +460,13 @@ async def enviar_sinais(application):
     Monitora o mercado atual do scanner e envia sinais em 2 estagios:
 
     ESTAGIO 1 - "AGUARDE UP/DOWN":
-      Enviado quando o scanner detecta uma tendencia clara (sinal UP ou DOWN)
-      mas ainda nao e o momento ideal de apostar.
-      Avisa o usuario para ficar preparado.
+        Enviado quando o scanner detecta uma tendencia clara (sinal UP ou DOWN)
+        mas ainda nao e o momento ideal de apostar.
+        Avisa o usuario para ficar preparado.
 
     ESTAGIO 2 - "APOSTAR AGORA UP/DOWN":
-      Enviado no ULTIMO MINUTO do mercado, quando o scanner decide apostar.
-      Este e o momento mais seguro.
+        Enviado no ULTIMO MINUTO do mercado, quando o scanner decide apostar.
+        Este e o momento mais seguro.
     """
     bot = application.bot
 
@@ -563,10 +563,10 @@ async def enviar_sinais(application):
             # ESTAGIO 1: AGUARDE (tendencia detectada, mas ainda nao e hora)
             # =====================================================================
             # So envia "AGUARDE" se:
-            # - Ainda nao enviamos para este mercado
-            # - O sinal mudou (ex: era UP, agora é DOWN)
-            # - Tem pelo menos 3 scans (dados minimos)
-            # - Ainda nao estamos no ultimo minuto
+            #   - Ainda nao enviamos para este mercado
+            #   - O sinal mudou (ex: era UP, agora é DOWN)
+            #   - Tem pelo menos 3 scans (dados minimos)
+            #   - Ainda nao estamos no ultimo minuto
 
             sinal_anterior = ultimo_sinal.get(mercado_id)
 
@@ -613,7 +613,6 @@ async def enviar_sinais(application):
             log(f"Erro no monitor: {e}", 'red')
             await asyncio.sleep(3)
 
-
 async def enviar_para_usuarios(bot, mensagem, mercado_id, tipo):
     """Envia mensagem para todos os usuarios com acesso."""
     usuarios = carregar_usuarios()
@@ -636,7 +635,6 @@ async def enviar_para_usuarios(bot, mensagem, mercado_id, tipo):
             log(f"Erro ao enviar para {uid_str}: {e}", 'red')
 
     log(f"[{tipo_str}] {mercado_id} enviado para {enviados_count} usuarios!", 'green')
-
 
 # ============================================================================
 # VERIFICADOR AUTOMATICO DE PAGAMENTOS
@@ -685,12 +683,12 @@ async def verificador_automatico(application):
             await asyncio.sleep(30)
 
 # ============================================================================
-# POST_INIT
+# POST_INIT - CORRECAO: asyncio.create_task em vez de application.create_task
 # ============================================================================
 async def post_init(application: Application):
     log("Bot conectado ao Telegram!", 'green')
-    application.create_task(verificador_automatico(application))
-    application.create_task(enviar_sinais(application))
+    asyncio.create_task(verificador_automatico(application))
+    asyncio.create_task(enviar_sinais(application))
 
 # ============================================================================
 # MAIN
@@ -701,7 +699,7 @@ def main():
         return
 
     log("=" * 60, 'cyan')
-    log("Bot Telegram Polymarket v5.0...", 'cyan')
+    log("Bot Telegram Polymarket v5.1...", 'cyan')
     log("=" * 60, 'cyan')
     log(f"Lendo mercado atual de: {ARQ_MERCADO_ATUAL}", 'dim')
     log(f"Valor: R${VALOR_PIX:.2f} | Dias: {DIAS_ACESSO}", 'dim')
