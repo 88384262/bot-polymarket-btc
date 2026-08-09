@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, make_response, request
+from flask import Flask, jsonify, make_response, request, send_from_directory
 import json, os, time
 
 app = Flask(__name__)
@@ -82,6 +82,14 @@ def home():
         return add_cors(response)
     response = make_response("BTC Signal Pro API - Online")
     return add_cors(response)
+
+@app.route("/", methods=["GET"])
+def home():
+    return send_from_directory(".", "index.html")
+
+@app.route("/health", methods=["GET"])
+def health():
+    return add_cors(make_response(jsonify({"status":"ok"})))
 
 def run_api():
     import threading
