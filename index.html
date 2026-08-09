@@ -67,14 +67,18 @@ tr:last-child td{border:none}
 .loading{text-align:center;padding:30px;color:#6b7280}
 .empty{text-align:center;padding:20px;color:#6b7280;font-size:0.85rem}
 footer{margin-top:24px;padding:20px 0;border-top:1px solid #1f2937;text-align:center;color:#6b7280;font-size:0.75rem}
+.scanner-status{font-size:0.75rem;color:#6b7280;margin-top:8px;text-align:center}
+.scanner-status.offline{color:#ef4444}
+.scanner-status.online{color:#22c55e}
 </style>
+<base target="_blank">
 <base target="_blank">
 </head>
 <body>
 
 <header>
   <div class="header-inner">
-    <a href="#" class="logo"><div class="logo-icon">📈</div>BTC <span>SIGNAL</span> PRO</a>
+    <a href="#" class="logo"><div class="logo-icon">&#8383;</div>BTC <span>SIGNAL</span> PRO</a>
     <div class="status"><span class="dot"></span>AO VIVO</div>
   </div>
 </header>
@@ -83,27 +87,28 @@ footer{margin-top:24px;padding:20px 0;border-top:1px solid #1f2937;text-align:ce
 
   <div class="hero">
     <div class="signal-main">
-      <div class="btc">₿</div>
+      <div class="btc">&#8383;</div>
       <div class="signal-info">
         <div class="status" style="margin-bottom:6px"><span class="dot"></span>SINAL ATUAL</div>
         <h2>BTC / USDT</h2>
-        <div class="sub">5 min • Polymarket</div>
+        <div class="sub">5 min &bull; Polymarket</div>
         <div class="badge wait" id="sig">CARREGANDO...</div>
+        <div class="scanner-status" id="scannerStatus"></div>
       </div>
     </div>
     <div class="meta">
-      <div class="meta-item"><div class="lbl">Preço</div><div class="val" id="price">---</div></div>
+      <div class="meta-item"><div class="lbl">Pre&ccedil;o</div><div class="val" id="price">---</div></div>
       <div class="meta-item"><div class="lbl">Hora</div><div class="val" id="hora">--:--</div></div>
       <div class="meta-item"><div class="lbl">Expira</div><div class="val" id="exp">--:--</div></div>
-      <div class="meta-item"><div class="lbl">Confiança</div><div class="val" id="conf" style="color:#22c55e">--%</div></div>
+      <div class="meta-item"><div class="lbl">Confian&ccedil;a</div><div class="val" id="conf" style="color:#22c55e">--%</div></div>
     </div>
   </div>
 
   <div class="ad">
     <div>
       <div class="ad-lbl">Publicidade</div>
-      <h4>Negocie com SEGURANÇA</h4>
-      <p>Plataforma confiável, rápida e com as menores taxas.</p>
+      <h4>Negocie com SEGURAN&Ccedil;A</h4>
+      <p>Plataforma confi&aacute;vel, r&aacute;pida e com as menores taxas.</p>
     </div>
     <a href="#">Abra sua conta</a>
   </div>
@@ -111,7 +116,7 @@ footer{margin-top:24px;padding:20px 0;border-top:1px solid #1f2937;text-align:ce
   <div class="grid">
     <div class="card">
       <div class="card-hd">
-        📊 Últimos Sinais BTC
+        &#128202; &Uacute;ltimos Sinais BTC
         <span class="last-upd" id="lastUpd">Atualizando...</span>
       </div>
       <table>
@@ -120,7 +125,7 @@ footer{margin-top:24px;padding:20px 0;border-top:1px solid #1f2937;text-align:ce
       </table>
     </div>
     <div class="card">
-      <div class="card-hd">📈 Desempenho</div>
+      <div class="card-hd">&#128200; Desempenho</div>
       <div class="stats">
         <div class="stat"><div class="n b" id="stTotal">--</div><div class="l">Sinais</div></div>
         <div class="stat"><div class="n g" id="stHits">--</div><div class="l">Acertos</div></div>
@@ -133,18 +138,21 @@ footer{margin-top:24px;padding:20px 0;border-top:1px solid #1f2937;text-align:ce
   <div class="ad">
     <div>
       <div class="ad-lbl">Publicidade</div>
-      <h4>Invista com <span style="color:#3b82f6">INTELIGÊNCIA</span></h4>
+      <h4>Invista com <span style="color:#3b82f6">INTELIG&Ecirc;NCIA</span></h4>
       <p>Ferramentas profissionais para traders.</p>
     </div>
     <a href="#">Saiba mais</a>
   </div>
 
-  <footer>© 2026 BTC Signal Pro • <a href="#" style="color:#6b7280">Telegram</a></footer>
+  <footer>&copy; 2026 BTC Signal Pro &bull; <a href="#" style="color:#6b7280">Telegram</a></footer>
 
 </div>
 
 <script>
+// ===== URL DA API NA RAILWAY =====
 const API_URL = "https://worker-production-9154.up.railway.app/api/signals";
+const HEALTH_URL = "https://worker-production-9154.up.railway.app/api/health";
+
 const PROXY_URL = "https://corsproxy.io/?" + encodeURIComponent(API_URL);
 let countdown = null;
 
@@ -168,22 +176,32 @@ function updateLastUpd() {
   document.getElementById("lastUpd").textContent = "Atualizado " + now.toLocaleTimeString("pt-BR");
 }
 
+function setScannerStatus(online, message) {
+  const el = document.getElementById("scannerStatus");
+  if (online) {
+    el.className = "scanner-status online";
+    el.textContent = message || "Scanner online";
+  } else {
+    el.className = "scanner-status offline";
+    el.textContent = message || "Scanner offline - aguardando conexao...";
+  }
+}
+
 async function load() {
   try {
-    // Tenta direto primeiro
     let r = await fetch(API_URL, {method:"GET", mode:"cors"});
     if(!r.ok) throw new Error("direct failed");
     let d = await r.json();
     render(d);
   } catch(e1) {
     try {
-      // Fallback para proxy
       let r = await fetch(PROXY_URL);
       if(!r.ok) throw new Error("proxy failed");
       let d = await r.json();
       render(d);
     } catch(e2) {
       document.getElementById("hist").innerHTML = '<tr><td colspan="4" class="empty">API offline. Tentando reconectar...</td></tr>';
+      setScannerStatus(false, "API offline - Tentando reconectar...");
     }
   }
 }
@@ -195,11 +213,12 @@ function render(d) {
   if(c && c.type && c.type !== "neutral") {
     const up = c.type === "up";
     sig.className = "badge " + (up?"up":"down");
-    sig.textContent = up ? "ALTA ↑" : "BAIXA ↓";
+    sig.textContent = up ? "ALTA \uD83D\uDCC8" : "BAIXA \uD83D\uDCC9";
     document.getElementById("conf").textContent = c.confidence+"%";
     document.getElementById("conf").style.color = up?"#22c55e":"#ef4444";
     document.getElementById("price").textContent = c.price ? "$"+c.price.toLocaleString("en-US") : "---";
     if(c.expires_in) startExp(...c.expires_in.split(":").map(Number));
+    setScannerStatus(true, "Scanner online - Sinal ativo");
   } else {
     sig.className = "badge wait";
     sig.textContent = "AGUARDANDO...";
@@ -208,6 +227,7 @@ function render(d) {
     document.getElementById("price").textContent = c && c.price ? "$"+c.price.toLocaleString("en-US") : "---";
     document.getElementById("exp").textContent = "--:--";
     if(countdown) clearInterval(countdown);
+    setScannerStatus(false, "Scanner offline ou sem sinal ativo");
   }
 
   const h = d.history || [];
@@ -215,7 +235,7 @@ function render(d) {
   if(h.length) {
     tbody.innerHTML = h.map(s=>{
       const up = s.type==="up";
-      return `<tr><td><span class="tag ${s.type}">${up?"ALTA ↑":"BAIXA ↓"}</span></td><td>${s.confidence}%</td><td style="color:#9ca3af">${s.time}</td><td class="${s.result}">${s.result==="hit"?"✅ ACERTO":"❌ ERRO"}</td></tr>`;
+      return `<tr><td><span class="tag ${s.type}">${up?"ALTA \uD83D\uDCC8":"BAIXA \uD83D\uDCC9"}</span></td><td>${s.confidence}%</td><td style="color:#9ca3af">${s.time}</td><td class="${s.result}">${s.result==="hit"?"\u2705 ACERTO":"\u274C ERRO"}</td></tr>`;
     }).join("");
   } else {
     tbody.innerHTML = '<tr><td colspan="4" class="empty">Nenhuma aposta registrada ainda.</td></tr>';
