@@ -33,17 +33,22 @@ def signals():
             "confidence": int(atual.get("score",50)),
             "price": round(atual.get("preco_abertura",0),2),
             "expires_in": f"{int(tr//60):02d}:{int(tr%60):02d}",
-            "apostou": atual.get("apostou",False)
+            "apostou": atual.get("apostou",False),
+            "vs_open": round(atual.get("vs_open",0.0),3),
+            "rsi": round(atual.get("rsi",50.0),1),
+            "mom": round(atual.get("mom",0.0),4)
         }
 
-    # Historico (ultimos 10)
+    # Historico - SO mercados onde REALMENTE apostou
     history = []
-    for m in reversed(mercados[-10:]):
+    for m in reversed(mercados):
         s = m.get("sinal","")
         if not s: continue
-        r = m.get("resultado","")
         a = m.get("apostou",False)
-        res = "hit" if (a and s==r) else "miss"
+        # So inclui se realmente apostou
+        if not a: continue
+        r = m.get("resultado","")
+        res = "hit" if s==r else "miss"
         from datetime import datetime
         ta = m.get("timestamp_abertura",0)
         hora = datetime.fromtimestamp(ta).strftime("%H:%M") if ta else "--:--"
@@ -54,7 +59,10 @@ def signals():
             "result": res
         })
 
-    # Stats
+    # Limita a 10 no historico
+    history = history[:10]
+
+    # Stats baseado apenas em apostas reais
     hits = modelo.get("acertos",0)
     misses = modelo.get("erros",0)
     total = hits + misses
@@ -63,17 +71,23 @@ def signals():
     return jsonify({
         "current": current,
         "history": history,
-        "stats": {"total":total,"hits":hits,"misses":misses,"rate":rate}
+        "stats": {"total":total,"hits":hits,"misses":misses,"rate":rate},
+        "server_time": time.time()
     })
 
 @app.route("/")
 def home():
     return "BTC Signal Pro API - Online"
 
-def run_api(port=5000):
+def run_api():
     import threading
+    port = int(os.environ.get("PORT", 5000))
+    print(f"[API] Iniciando na porta {port}...")
     def _run():
-        app.run(host="0.0.0.0", port=port, threaded=True, debug=False)
+        try:
+            app.run(host="0.0.0.0", port=port, threaded=True, debug=False, use_reloader=False)
+        except Exception as e:
+            print(f"[API] Erro no servidor: {e}")
     t = threading.Thread(target=_run, daemon=True)
     t.start()
-    print(f"[API] Rodando em http://0.0.0.0:{port}")
+    print(f"[API] Servidor iniciado em http://0.0.0.0:{port}")
