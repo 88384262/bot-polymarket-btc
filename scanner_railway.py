@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Scanner Polymarket BTC v21.0 - VERSAO NUVEM (Railway)
+Scanner Polymarket BTC v21.1 - VERSAO NUVEM (Railway)
 - Sem limpar tela (nao tem terminal na nuvem)
 - Logs com timestamp
 - Salva btc_mercado_atual.json para o bot ler
+- Multiplas fontes de preco com retry e backoff
 """
 
 import requests
@@ -78,11 +79,13 @@ ult_fonte = "-"
 last_scan_ts = 0
 
 # ============================================================================
-# PRECO BTC
+# PRECO BTC - MULTIPLAS FONTES COM RETRY
 # ============================================================================
+HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+
 def get_btc_chainlink():
     try:
-        r = requests.get(URL_CL, timeout=5)
+        r = requests.get(URL_CL, timeout=5, headers=HEADERS)
         r.raise_for_status()
         data = r.json()
         rounds = data.get("rounds", [])
@@ -93,28 +96,72 @@ def get_btc_chainlink():
         pass
     return None
 
-def get_btc():
-    global ult_fonte
-    result = get_btc_chainlink()
-    if result:
-        ult_fonte = "Chainlink"
-        return result
+def get_btc_binance():
     try:
-        r = requests.get(URL_CG, timeout=10)
+        r = requests.get("https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT", timeout=5, headers=HEADERS)
+        r.raise_for_status()
+        preco = float(r.json()["price"])
+        return preco, time.time()
+    except Exception:
+        pass
+    return None
+
+def get_btc_coinbase():
+    try:
+        r = requests.get("https://api.coinbase.com/v2/exchange-rates?currency=BTC", timeout=5, headers=HEADERS)
+        r.raise_for_status()
+        preco = float(r.json()["data"]["rates"]["USD"])
+        return preco, time.time()
+    except Exception:
+        pass
+    return None
+
+def get_btc_kraken():
+    try:
+        r = requests.get("https://api.kraken.com/0/public/Ticker?pair=XBTUSD", timeout=5, headers=HEADERS)
+        r.raise_for_status()
+        data = r.json()["result"]["XXBTZUSD"]
+        preco = float(data["c"][0])
+        return preco, time.time()
+    except Exception:
+        pass
+    return None
+
+def get_btc_coingecko():
+    try:
+        r = requests.get(URL_CG, timeout=10, headers=HEADERS)
         r.raise_for_status()
         preco = float(r.json()["bitcoin"]["usd"])
-        ult_fonte = "CoinGecko"
         return preco, time.time()
     except Exception:
         pass
+    return None
+
+def get_btc_cryptocompare():
     try:
-        r = requests.get(URL_CC, timeout=10)
+        r = requests.get(URL_CC, timeout=10, headers=HEADERS)
         r.raise_for_status()
         preco = float(r.json()["USD"])
-        ult_fonte = "CryptoCompare"
         return preco, time.time()
     except Exception:
         pass
+    return None
+
+def get_btc():
+    global ult_fonte
+    fontes = [
+        (get_btc_binance, "Binance"),
+        (get_btc_coinbase, "Coinbase"),
+        (get_btc_kraken, "Kraken"),
+        (get_btc_chainlink, "Chainlink"),
+        (get_btc_coingecko, "CoinGecko"),
+        (get_btc_cryptocompare, "CryptoCompare"),
+    ]
+    for fn, nome in fontes:
+        result = fn()
+        if result:
+            ult_fonte = nome
+            return result
     if hist_btc:
         ult_fonte = "Cache"
         return hist_btc[-1], time.time()
@@ -197,7 +244,7 @@ def carrega_mod():
         try:
             with open(ARQ_MOD, "r") as f:
                 d = json.load(f)
-                return d.get("acertos", 0), d.get("erros", 0), d.get("bank", 0.0)
+            return d.get("acertos", 0), d.get("erros", 0), d.get("bank", 0.0)
         except:
             pass
     return 0, 0, 0.0
@@ -359,8 +406,19 @@ def fecha(m, btc, ts):
 
 def do_scan():
     global merc_atual, acertos, erros, bank, last_scan_ts
+    btc = None
+    ts = None
+    for tentativa in range(3):
+        try:
+            btc, ts = get_btc()
+            break
+        except Exception as e:
+            log(f"Tentativa {tentativa+1}/3 falhou: {e}")
+            time.sleep(2 ** tentativa)
+    else:
+        log("Erro no scan: Todas fontes falharam apos 3 tentativas")
+        return
     try:
-        btc, ts = get_btc()
         detecta(btc, ts)
         if merc_atual is None:
             return
@@ -390,15 +448,14 @@ def do_scan():
             merc_atual["mom"] = mom_v
             merc_atual["tend"] = tend_v
             merc_atual["vs_open"] = vs
-            log(f"APOSTA: {si} | Score: {sc:.1f} | BTC: ${btc:,.2f} | Tempo restante: {int(tr)}s")
+            log(f"APOSTA: {si} | Score: {sc:.1f} | BTC: ${btc:,.2f} | Tempo restante: {int(tr)}s | Fonte: {ult_fonte}")
         elif not pd and not merc_atual.get("apostou", False):
             merc_atual["sinal"] = si
-        # Atualiza campos para o bot ler
-        merc_atual["vs_open"] = vs
-        merc_atual["rsi"] = rsi_v
-        merc_atual["mom"] = mom_v
-        merc_atual["tend"] = tend_v
-        merc_atual["atr_p"] = atr_p
+            merc_atual["vs_open"] = vs
+            merc_atual["rsi"] = rsi_v
+            merc_atual["mom"] = mom_v
+            merc_atual["tend"] = tend_v
+            merc_atual["atr_p"] = atr_p
         salva_mercado_atual()
     except Exception as e:
         log(f"Erro no scan: {e}")
@@ -411,7 +468,7 @@ def main():
     acertos, erros, bank = carrega_mod()
     carrega_merc()
     log("=" * 50)
-    log("SCANNER POLYMARKET BTC v21 - MODO NUVEM")
+    log("SCANNER POLYMARKET BTC v21.1 - MODO NUVEM")
     log(f"Stake: ${STAKE} | PAPER: {PAPER}")
     log("=" * 50)
     do_scan()
