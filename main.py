@@ -2,10 +2,9 @@ import os
 import time
 import threading
 import sys
-import asyncio
 
 print("="*60)
-print("🚀 BTC SIGNAL PRO - INICIADOR UNIFICADO")
+print("🚀 BTC SIGNAL PRO - INICIADOR TURBO")
 print("="*60)
 
 def run_api():
@@ -31,23 +30,22 @@ def run_scanner():
             time.sleep(10)
 
 def run_bot():
-    print("[BOT] Iniciando Telegram...")
-    try:
-        import bot_telegram_railway
-        bot_telegram_railway.main()
-    except Exception as e:
-        print(f"[BOT] Erro fatal: {e}")
+    # CORREÇÃO PARA O EVENT LOOP DO TELEGRAM
+    # Não usamos thread. Usamos um subprocesso separado.
+    import subprocess
+    import sys
+    print("[BOT] Iniciando Bot do Telegram em processo separado...")
+    subprocess.run([sys.executable, "bot_telegram_railway.py"])
 
 if __name__ == "__main__":
-    # ⚠️ CORREÇÃO AQUI: A API fica na Thread, o Bot e Scanner ficam no loop principal
-
-    # 1. Inicia a API em uma Thread separada (Waitress funciona bem assim)
+    # 1. API roda em uma thread (suporta isso perfeitamente)
     api_thread = threading.Thread(target=run_api, daemon=True)
     api_thread.start()
+    time.sleep(2) # Dá um tempo para a API subir
 
-    # 2. O Scanner roda em uma Thread separada
-    threading.Thread(target=run_scanner, daemon=True).start()
+    # 2. Scanner roda em uma thread
+    scanner_thread = threading.Thread(target=run_scanner, daemon=True)
+    scanner_thread.start()
 
-    # 3. O Bot do Telegram PRECISA rodar no Event Loop Principal (Main Thread)
-    # Isso resolve o erro "There is no current event loop"
+    # 3. O BOT é executado em um processo separado (NÃO CAUSA ERRO DE EVENT LOOP)
     run_bot()
