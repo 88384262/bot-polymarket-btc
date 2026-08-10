@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-BOT TELEGRAM - SINAIS POLYMARKET BTC v5.1 (2 ESTAGIOS: AGUARDE + ULTIMO MINUTO)
-- CORRIGIDO COMPLETAMENTE PARA COMPATIBILIDADE COM NOVA BIBLIOTECA
+BOT TELEGRAM - SINAIS POLYMARKET BTC v5.2
+- REEESCRITO PARA COMPATIBILIDADE TOTAL COM A NOVA BIBLIOTECA
+- LOGICA DE 2 ESTAGIOS PRESERVADA
 """
 
 import json
@@ -33,14 +34,16 @@ ARQ_PAGAMENTOS = os.getenv("ARQ_PAGAMENTOS", "telegram_pagamentos.json")
 ARQ_PENDENTES = os.getenv("ARQ_PENDENTES", "telegram_pendentes.json")
 
 # ============================================================================
-# UTILITÁRIOS
+# CORES E LOGS
 # ============================================================================
 C = {'reset': '\033[0m', 'green': '\033[92m', 'red': '\033[91m', 'cyan': '\033[96m'}
-
 def log(msg, cor='reset'):
     ts = datetime.now().strftime("%H:%M:%S")
     print(f"[{ts}] {C[cor]}{msg}{C['reset']}", flush=True)
 
+# ============================================================================
+# UTILITÁRIOS JSON
+# ============================================================================
 def carregar_json(caminho, padrao):
     try:
         with open(caminho, 'r', encoding='utf-8') as f:
@@ -55,23 +58,12 @@ def salvar_json(caminho, dados):
 # ============================================================================
 # SISTEMA DE USUARIOS
 # ============================================================================
-def carregar_usuarios():
-    return carregar_json(ARQ_USUARIOS, {})
-
-def salvar_usuarios(usuarios):
-    salvar_json(ARQ_USUARIOS, usuarios)
-
-def carregar_pagamentos():
-    return carregar_json(ARQ_PAGAMENTOS, {"historico": []})
-
-def salvar_pagamentos(pagamentos):
-    salvar_json(ARQ_PAGAMENTOS, pagamentos)
-
-def carregar_pendentes():
-    return carregar_json(ARQ_PENDENTES, {})
-
-def salvar_pendentes(pendentes):
-    salvar_json(ARQ_PENDENTES, pendentes)
+def carregar_usuarios(): return carregar_json(ARQ_USUARIOS, {})
+def salvar_usuarios(usuarios): salvar_json(ARQ_USUARIOS, usuarios)
+def carregar_pagamentos(): return carregar_json(ARQ_PAGAMENTOS, {"historico": []})
+def salvar_pagamentos(pagamentos): salvar_json(ARQ_PAGAMENTOS, pagamentos)
+def carregar_pendentes(): return carregar_json(ARQ_PENDENTES, {})
+def salvar_pendentes(pendentes): salvar_json(ARQ_PENDENTES, pendentes)
 
 def tem_acesso(user_id):
     usuarios = carregar_usuarios()
@@ -164,7 +156,7 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         keyboard = [[InlineKeyboardButton("📊 Meu Status", callback_data='status')]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         await update.message.reply_text(
-            f"👋 Ola, {user.first_name}!\n\n✅ *Acesso Ativo!*\n📊 Voce recebera sinais em *2 estagios*:\n    1️⃣ *AGUARDE* — quando o scanner detecta tendencia\n    2️⃣ *APOSTAR AGORA* — no *ULTIMO MINUTO* (mais seguro)",
+            f"👋 Ola, {user.first_name}!\n\n✅ *Acesso Ativo!*\n📊 Voce recebera sinais em *2 estagios*:\n    1️⃣ *AGUARDE* — quando o scanner detecta tendencia\n    2️⃣ *APOSTAR AGORA* — no *ULTIMO MINUTO*",
             reply_markup=reply_markup, parse_mode='Markdown'
         )
     else:
@@ -389,27 +381,25 @@ async def verificador_automatico(application):
             await asyncio.sleep(30)
 
 # ============================================================================
-# POST_INIT (NOVO MÉTODO CORRETO)
+# POST INIT (CORRETO PARA A NOVA VERSÃO)
 # ============================================================================
 async def post_init(application: Application):
     log("Bot conectado ao Telegram!", 'green')
-    # Cria as tarefas assíncronas
     asyncio.create_task(verificador_automatico(application))
     asyncio.create_task(enviar_sinais(application))
 
 # ============================================================================
-# MAIN
+# MAIN (CORRETO, SEM UPDATER)
 # ============================================================================
 def main():
     if TOKEN_BOT == "SEU_TOKEN_AQUI":
-        log("ERRO: Configure o TOKEN_BOT nas variáveis de ambiente!", 'red')
+        log("ERRO: Configure o TOKEN_BOT nas variaveis de ambiente!", 'red')
         return
 
     log("=" * 60, 'cyan')
-    log("Bot Telegram Polymarket v5.1 - CORRIGIDO", 'cyan')
+    log("Bot Telegram Polymarket v5.2 - CORRIGIDO", 'cyan')
     log("=" * 60, 'cyan')
 
-    # Inicialização correta com Application (sem Updater antigo)
     application = Application.builder().token(TOKEN_BOT).post_init(post_init).build()
 
     application.add_handler(CommandHandler("start", cmd_start))
@@ -417,7 +407,7 @@ def main():
     application.add_handler(CommandHandler("comprar", cmd_comprar))
     application.add_handler(CallbackQueryHandler(callback_handler))
 
-    log("Bot iniciado! Pressione Ctrl+C para parar.", 'green')
+    log("Bot iniciado com sucesso!", 'green')
     application.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
