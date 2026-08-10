@@ -16,7 +16,6 @@ def run_api():
         serve(api.app, host="0.0.0.0", port=port, threads=4)
     except Exception as e:
         print(f"[API] Erro fatal: {e}")
-        # Espera um pouco e tenta reiniciar a API sozinha
         time.sleep(10)
         run_api()
 
