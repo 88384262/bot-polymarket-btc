@@ -1,251 +1,152 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BTC Signal Pro</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:#0a0e17;color:#f3f4f6;font-family:system-ui,sans-serif;min-height:100vh}
-.container{max-width:1100px;margin:0 auto;padding:16px}
-header{background:#111827;border-bottom:1px solid #1f2937;padding:12px 0;position:sticky;top:0;z-index:100}
-.header-inner{display:flex;align-items:center;justify-content:space-between;max-width:1100px;margin:0 auto;padding:0 16px}
-.logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:1.2rem;text-decoration:none;color:#f3f4f6}
-.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,#22c55e,#16a34a);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.9rem}
-.logo span{color:#22c55e}
-.status{display:flex;align-items:center;gap:6px;font-size:0.75rem;color:#22c55e;font-weight:600}
-.dot{width:8px;height:8px;background:#22c55e;border-radius:50%;animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
-
-.hero{background:#111827;border:1px solid #1f2937;border-radius:12px;padding:24px;margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px}
-@media(max-width:700px){.hero{grid-template-columns:1fr}}
-.signal-main{display:flex;align-items:center;gap:16px}
-.btc{width:56px;height:56px;background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:800;color:#fff}
-.signal-info h2{font-size:1.3rem}
-.signal-info .sub{color:#9ca3af;font-size:0.85rem}
-.badge{display:inline-flex;align-items:center;gap:6px;padding:8px 20px;border-radius:8px;font-size:1.2rem;font-weight:800;margin-top:10px}
-.badge.up{background:rgba(34,197,94,0.12);color:#22c55e;border:1px solid rgba(34,197,94,0.25)}
-.badge.down{background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.25)}
-.badge.wait{background:rgba(107,114,128,0.12);color:#6b7280;border:1px solid rgba(107,114,128,0.25)}
-
-.meta{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.meta-item{background:#0a0e17;border:1px solid #1f2937;border-radius:8px;padding:12px 14px}
-.meta-item .lbl{font-size:0.65rem;color:#6b7280;text-transform:uppercase}
-.meta-item .val{font-size:1rem;font-weight:700;margin-top:2px}
-
-.ad{background:linear-gradient(135deg,#1a2332,#0f172a);border:1px solid #1f2937;border-radius:12px;padding:18px 24px;margin-top:16px;display:flex;align-items:center;justify-content:space-between;gap:16px}
-@media(max-width:600px){.ad{flex-direction:column;text-align:center}}
-.ad .ad-lbl{font-size:0.6rem;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
-.ad h4{font-size:0.95rem}
-.ad p{color:#9ca3af;font-size:0.8rem}
-.ad a{background:#3b82f6;color:#fff;padding:8px 18px;border-radius:8px;font-size:0.8rem;font-weight:600;text-decoration:none}
-
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
-@media(max-width:700px){.grid{grid-template-columns:1fr}}
-.card{background:#111827;border:1px solid #1f2937;border-radius:12px;overflow:hidden}
-.card-hd{padding:14px 16px;border-bottom:1px solid #1f2937;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;display:flex;justify-content:space-between;align-items:center}
-.last-upd{font-size:0.65rem;color:#6b7280;font-weight:400}
-table{width:100%;border-collapse:collapse;font-size:0.82rem}
-th,td{padding:10px 14px;text-align:left}
-th{color:#6b7280;font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid #1f2937}
-td{border-bottom:1px solid #1f2937}
-tr:last-child td{border:none}
-.tag{display:inline-flex;padding:3px 8px;border-radius:5px;font-size:0.7rem;font-weight:700}
-.tag.up{background:rgba(34,197,94,0.12);color:#22c55e}
-.tag.down{background:rgba(239,68,68,0.12);color:#ef4444}
-.hit{color:#22c55e;font-weight:700}
-.miss{color:#ef4444;font-weight:700}
-
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px}
-.stat{text-align:center}
-.stat .n{font-size:1.3rem;font-weight:800}
-.stat .n.g{color:#22c55e}
-.stat .n.r{color:#ef4444}
-.stat .n.b{color:#3b82f6}
-.stat .l{font-size:0.6rem;color:#6b7280;text-transform:uppercase;margin-top:2px}
-
-.loading{text-align:center;padding:30px;color:#6b7280}
-.empty{text-align:center;padding:20px;color:#6b7280;font-size:0.85rem}
-footer{margin-top:24px;padding:20px 0;border-top:1px solid #1f2937;text-align:center;color:#6b7280;font-size:0.75rem}
-.scanner-status{font-size:0.75rem;color:#6b7280;margin-top:8px;text-align:center}
-.scanner-status.offline{color:#ef4444}
-.scanner-status.online{color:#22c55e}
-</style>
-<base target="_blank">
-<base target="_blank">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BTC Signal Pro</title>
+    <link rel="stylesheet" href="style.css" />
+    <!-- Google AdSense (coloque seu código) -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXX" crossorigin="anonymous"></script>
 </head>
 <body>
+    <!-- TOPO -->
+    <header>
+        <div class="logo">⬡ SIGNAL PRO</div>
+        <nav>
+            <a href="#" class="active">PAINEL</a>
+            <a href="#">SINAIS</a>
+            <a href="#">HISTÓRICO</a>
+            <a href="#">ESTATÍSTICAS</a>
+            <a href="#">PLANOS</a>
+            <a href="#">CONFIGURAÇÕES</a>
+            <a href="#" class="btn-entrar">ENTRAR</a>
+            <a href="#" class="btn-cadastrar">CADASTRAR</a>
+        </nav>
+    </header>
 
-<header>
-  <div class="header-inner">
-    <a href="#" class="logo"><div class="logo-icon">&#8383;</div>BTC <span>SIGNAL</span> PRO</a>
-    <div class="status"><span class="dot"></span>AO VIVO</div>
-  </div>
-</header>
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main>
+        <!-- SINAL MAIS RECENTE -->
+        <section class="sinal-recente">
+            <div class="card-sinal">
+                <div class="cabecalho-sinal">
+                    <span class="badge-ao-vivo">● AO VIVO</span>
+                    <h2>BTC/USDT</h2>
+                    <span class="timeframe">5 MINUTOS</span>
+                </div>
+                <div class="corpo-sinal">
+                    <div class="preco-atual">
+                        <span class="label">PREÇO ATUAL</span>
+                        <span class="valor" id="preco">$--</span>
+                    </div>
+                    <div class="info-rapida">
+                        <div>
+                            <span class="label">TIME</span>
+                            <span class="valor" id="hora">--:--:--</span>
+                        </div>
+                        <div>
+                            <span class="label">EXPIRA EM</span>
+                            <span class="valor" id="expira">--:--</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="rodape-sinal">
+                    <div class="confianca" id="confianca">
+                        <span>CONFIANÇA</span>
+                        <span class="valor-confianca">--%</span>
+                        <span class="trend">↑</span>
+                    </div>
+                    <div class="estrategia">
+                        <span>ESTRATÉGIA</span>
+                        <span class="valor-estrategia">Momentum Pro</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Propaganda ao lado do sinal -->
+            <div class="propaganda-destaque">
+                <ins class="adsbygoogle"
+                     style="display:block"
+                     data-ad-client="ca-pub-XXXXXXXXXX"
+                     data-ad-slot="XXXXXXXXXX"
+                     data-ad-format="auto"></ins>
+                <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+            </div>
+        </section>
 
-<div class="container">
+        <!-- ÚLTIMOS SINAIS EM TABELA -->
+        <section class="ultimos-sinais">
+            <h3>ÚLTIMOS SINAIS</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ATIVO</th>
+                        <th>SINAL</th>
+                        <th>CONFIANÇA</th>
+                        <th>TIMEFRAME</th>
+                        <th>HORÁRIO</th>
+                        <th>RESULTADO</th>
+                    </tr>
+                </thead>
+                <tbody id="tabela-sinais">
+                    <!-- Preenchido pelo JavaScript -->
+                </tbody>
+            </table>
+            <a href="#" class="ver-historico">VER HISTÓRICO COMPLETO →</a>
+        </section>
 
-  <div class="hero">
-    <div class="signal-main">
-      <div class="btc">&#8383;</div>
-      <div class="signal-info">
-        <div class="status" style="margin-bottom:6px"><span class="dot"></span>SINAL ATUAL</div>
-        <h2>BTC / USDT</h2>
-        <div class="sub">5 min &bull; Polymarket</div>
-        <div class="badge wait" id="sig">CARREGANDO...</div>
-        <div class="scanner-status" id="scannerStatus"></div>
-      </div>
-    </div>
-    <div class="meta">
-      <div class="meta-item"><div class="lbl">Pre&ccedil;o</div><div class="val" id="price">---</div></div>
-      <div class="meta-item"><div class="lbl">Hora</div><div class="val" id="hora">--:--</div></div>
-      <div class="meta-item"><div class="lbl">Expira</div><div class="val" id="exp">--:--</div></div>
-      <div class="meta-item"><div class="lbl">Confian&ccedil;a</div><div class="val" id="conf" style="color:#22c55e">--%</div></div>
-    </div>
-  </div>
+        <!-- DESEMPENHO + PROPAGANDA -->
+        <section class="desempenho-e-ads">
+            <div class="desempenho">
+                <h3>DESEMPENHO DO SISTEMA</h3>
+                <div class="metricas">
+                    <div><span>SINAIS</span><strong id="total-sinais">0</strong></div>
+                    <div><span>ACERTOS</span><strong id="total-acertos">0</strong></div>
+                    <div><span>ERROS</span><strong id="total-erros">0</strong></div>
+                    <div><span>TAXA DE ACERTO</span><strong id="taxa-acerto">0%</strong></div>
+                </div>
+            </div>
+            <!-- Propaganda -->
+            <div class="propaganda-rodape">
+                <ins class="adsbygoogle"
+                     style="display:block"
+                     data-ad-client="ca-pub-XXXXXXXXXX"
+                     data-ad-slot="XXXXXXXXXX"
+                     data-ad-format="auto"></ins>
+                <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+            </div>
+        </section>
 
-  <div class="ad">
-    <div>
-      <div class="ad-lbl">Publicidade</div>
-      <h4>Negocie com SEGURAN&Ccedil;A</h4>
-      <p>Plataforma confi&aacute;vel, r&aacute;pida e com as menores taxas.</p>
-    </div>
-    <a href="#">Abra sua conta</a>
-  </div>
+        <!-- ÚLTIMOS SINAIS (cards) -->
+        <section class="cards-sinais">
+            <div id="cards-container">
+                <!-- Preenchido pelo JavaScript -->
+            </div>
+            <a href="#" class="ver-todos">VER TODOS →</a>
+        </section>
+    </main>
 
-  <div class="grid">
-    <div class="card">
-      <div class="card-hd">
-        &#128202; &Uacute;ltimos Sinais BTC
-        <span class="last-upd" id="lastUpd">Atualizando...</span>
-      </div>
-      <table>
-        <thead><tr><th>Sinal</th><th>Conf.</th><th>Hora</th><th>Res.</th></tr></thead>
-        <tbody id="hist"><tr><td colspan="4" class="loading">Carregando...</td></tr></tbody>
-      </table>
-    </div>
-    <div class="card">
-      <div class="card-hd">&#128200; Desempenho</div>
-      <div class="stats">
-        <div class="stat"><div class="n b" id="stTotal">--</div><div class="l">Sinais</div></div>
-        <div class="stat"><div class="n g" id="stHits">--</div><div class="l">Acertos</div></div>
-        <div class="stat"><div class="n r" id="stMiss">--</div><div class="l">Erros</div></div>
-        <div class="stat"><div class="n g" id="stRate">--%</div><div class="l">Taxa</div></div>
-      </div>
-    </div>
-  </div>
+    <!-- RODAPÉ -->
+    <footer>
+        <div class="footer-conteudo">
+            <div>
+                <h4>INVISTA COM INTELIGÊNCIA</h4>
+                <p>Ferramentas profissionais para traders exigentes.</p>
+            </div>
+            <div class="vantagens">
+                <div><span>📡</span> SINAIS 24/7</div>
+                <div><span>🎯</span> ALTA PRECISÃO</div>
+                <div><span>🛡️</span> GESTÃO DE RISCO</div>
+                <div><span>💬</span> SUPORTE</div>
+            </div>
+            <div class="redes">
+                <span>CONECTE-SE CONOSCO</span>
+                <a href="#">Telegram</a>
+                <a href="#">YouTube</a>
+            </div>
+        </div>
+        <div class="copyright">© 2026 BTC Signal Pro</div>
+    </footer>
 
-  <div class="ad">
-    <div>
-      <div class="ad-lbl">Publicidade</div>
-      <h4>Invista com <span style="color:#3b82f6">INTELIG&Ecirc;NCIA</span></h4>
-      <p>Ferramentas profissionais para traders.</p>
-    </div>
-    <a href="#">Saiba mais</a>
-  </div>
-
-  <footer>&copy; 2026 BTC Signal Pro &bull; <a href="#" style="color:#6b7280">Telegram</a></footer>
-
-</div>
-
-<script>
-// ===== URL RELATIVA — FUNCIONA NO MESMO DOMINIO (Railway) =====
-// Se estiver no Vercel com proxy, tambem funciona porque /api/* redireciona
-const API_URL = "/api/signals";
-
-let countdown = null;
-
-function tick() {
-  document.getElementById("hora").textContent = new Date().toLocaleTimeString("pt-BR");
-}
-setInterval(tick, 1000); tick();
-
-function startExp(m,s) {
-  if(countdown) clearInterval(countdown);
-  const el = document.getElementById("exp");
-  countdown = setInterval(()=>{
-    if(s>0){s--;} else if(m>0){m--;s=59;} else {clearInterval(countdown);el.textContent="00:00";return;}
-    el.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
-  },1000);
-  el.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
-}
-
-function updateLastUpd() {
-  const now = new Date();
-  document.getElementById("lastUpd").textContent = "Atualizado " + now.toLocaleTimeString("pt-BR");
-}
-
-function setScannerStatus(online, message) {
-  const el = document.getElementById("scannerStatus");
-  if (online) {
-    el.className = "scanner-status online";
-    el.textContent = message || "Scanner online";
-  } else {
-    el.className = "scanner-status offline";
-    el.textContent = message || "Scanner offline - aguardando conexao...";
-  }
-}
-
-async function load() {
-  try {
-    let r = await fetch(API_URL);
-    if(!r.ok) throw new Error("fetch failed: " + r.status);
-    let d = await r.json();
-    render(d);
-  } catch(e) {
-    console.error("Erro ao carregar API:", e);
-    document.getElementById("hist").innerHTML = '<tr><td colspan="4" class="empty">API offline. Tentando reconectar...</td></tr>';
-    setScannerStatus(false, "API offline - Tentando reconectar...");
-  }
-}
-
-function render(d) {
-  const c = d.current;
-  const sig = document.getElementById("sig");
-
-  if(c && c.type && c.type !== "neutral") {
-    const up = c.type === "up";
-    sig.className = "badge " + (up?"up":"down");
-    sig.textContent = up ? "ALTA \uD83D\uDCC8" : "BAIXA \uD83D\uDCC9";
-    document.getElementById("conf").textContent = c.confidence+"%";
-    document.getElementById("conf").style.color = up?"#22c55e":"#ef4444";
-    document.getElementById("price").textContent = c.price ? "$"+c.price.toLocaleString("en-US") : "---";
-    if(c.expires_in) startExp(...c.expires_in.split(":").map(Number));
-    setScannerStatus(true, "Scanner online - Sinal ativo");
-  } else {
-    sig.className = "badge wait";
-    sig.textContent = "AGUARDANDO...";
-    document.getElementById("conf").textContent = "--%";
-    document.getElementById("conf").style.color = "#6b7280";
-    document.getElementById("price").textContent = c && c.price ? "$"+c.price.toLocaleString("en-US") : "---";
-    document.getElementById("exp").textContent = "--:--";
-    if(countdown) clearInterval(countdown);
-    setScannerStatus(false, "Aguardando proximo sinal...");
-  }
-
-  const h = d.history || [];
-  const tbody = document.getElementById("hist");
-  if(h.length) {
-    tbody.innerHTML = h.map(s=>{
-      const up = s.type==="up";
-      return `<tr><td><span class="tag ${s.type}">${up?"ALTA \uD83D\uDCC8":"BAIXA \uD83D\uDCC9"}</span></td><td>${s.confidence}%</td><td style="color:#9ca3af">${s.time}</td><td class="${s.result}">${s.result==="hit"?"\u2705 ACERTO":"\u274C ERRO"}</td></tr>`;
-    }).join("");
-  } else {
-    tbody.innerHTML = '<tr><td colspan="4" class="empty">Nenhuma aposta registrada ainda.</td></tr>';
-  }
-
-  const st = d.stats || {};
-  document.getElementById("stTotal").textContent = st.total || 0;
-  document.getElementById("stHits").textContent = st.hits || 0;
-  document.getElementById("stMiss").textContent = st.misses || 0;
-  document.getElementById("stRate").textContent = (st.rate||0)+"%";
-
-  updateLastUpd();
-}
-
-load();
-setInterval(load, 5000);
-</script>
-
+    <script src="script.js"></script>
 </body>
 </html>
