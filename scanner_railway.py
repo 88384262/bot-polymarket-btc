@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 Scanner Polymarket BTC v21.0 - VERSAO NUVEM (Railway) + ENVIO API
-- Agora envia os sinais para o seu site em tempo real!
 """
 
 import requests
@@ -271,13 +270,14 @@ def pode_apostar(m, sc, s, mom_v, atr_p, tempo_r):
     return True, "ok"
 
 # ============================================================================
-# 🔥 ADIÇÃO: ENVIA SINAL PARA API 🔥
+# 🔥 ENVIA SINAL PARA API 🔥
 # ============================================================================
 def enviar_sinal_api(sinal, preco, score, rsi_val, mom_val):
     try:
+        # URL da sua API local ou na nuvem
         url_api = "https://worker-production-9154.up.railway.app/api/novo_sinal"
         
-        # Direção no formato que o site entende
+        # Direção
         direcao = "ALTA" if sinal == "UP" else "BAIXA"
         
         dados = {
@@ -291,8 +291,8 @@ def enviar_sinal_api(sinal, preco, score, rsi_val, mom_val):
         }
         
         response = requests.post(url_api, json=dados, timeout=3)
-        if response.status_code == 201:
-            log(f"✅ Sinal {direcao} enviado para o site com sucesso!")
+        if response.status_code in (200, 201):
+            log(f"✅ Sinal {direcao} enviado para o site!")
         else:
             log(f"⚠️ Erro ao enviar sinal: Status {response.status_code}")
             
