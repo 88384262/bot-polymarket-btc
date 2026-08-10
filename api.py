@@ -6,24 +6,19 @@ from datetime import datetime
 app = Flask(__name__)
 CORS(app)
 
-# Armazenamento em memória RAM
+# MEMÓRIA DO SISTEMA (Onde os dados ficam guardados)
 MEMORY_STORAGE = {
     'ultimo_sinal': None,
     'historico': []
 }
 
+# ==========================================
+# 1. ROTA QUE O SITE USA PARA LER OS DADOS
+# ==========================================
 @app.route('/api/sinais', methods=['GET'])
 def get_sinais():
     sinal = MEMORY_STORAGE.get('ultimo_sinal')
     historico = MEMORY_STORAGE.get('historico', [])[-10:]
-    
-    total = len(historico)
-    desempenho = {
-        'total': total,
-        'acertos': 0,
-        'erros': 0,
-        'taxa': 0
-    }
     
     if not sinal:
         return jsonify({
@@ -37,48 +32,36 @@ def get_sinais():
                 'ativo': 'BTC/USDT'
             },
             'ultimos_sinais': [],
-            'desempenho': desempenho
+            'desempenho': {'total': 0, 'acertos': 0, 'erros': 0, 'taxa': 0}
         })
     
+    # Se tiver sinal, devolve ele para o site
     return jsonify({
-        'sinal_atual': {
-            'preco': sinal.get('preco', '--'),
-            'hora': sinal.get('hora', datetime.now().strftime('%H:%M:%S')),
-            'expira': sinal.get('expira', '--:--'),
-            'confianca': str(sinal.get('confianca', '--')),
-            'estrategia': sinal.get('estrategia', 'Momentum Pro'),
-            'direcao': sinal.get('direcao', '--'),
-            'ativo': sinal.get('ativo', 'BTC/USDT')
-        },
+        'sinal_atual': sinal,
         'ultimos_sinais': historico,
-        'desempenho': desempenho
+        'desempenho': {'total': len(historico), 'acertos': 0, 'erros': 0, 'taxa': 0}
     })
 
+# ==========================================
+# 2. ROTA QUE O SCANNER USA PARA ENVIAR O SINAL
+# ==========================================
 @app.route('/api/novo_sinal', methods=['POST'])
 def receber_sinal():
     dados = request.json
     if not dados:
         return jsonify({'erro': 'Sem dados'}), 400
     
-    # Salva sinal mais recente
+    # Salva o sinal novo na memória
     MEMORY_STORAGE['ultimo_sinal'] = dados
     
-    # Adiciona ao histórico
-    novo = dados.copy()
-    novo['resultado'] = 'PENDENTE'
-    novo['data_recebido'] = datetime.now().isoformat()
-    
+    # Adiciona no histórico
     hist = MEMORY_STORAGE.get('historico', [])
-    hist.append(novo)
-    if len(hist) > 100:
-        hist = hist[-100:]
+    hist.append(dados)
+    if len(hist) > 50:
+        hist = hist[-50:]
     MEMORY_STORAGE['historico'] = hist
     
     return jsonify({'status': 'ok'}), 201
-
-@app.route('/api/status', methods=['GET'])
-def status():
-    return jsonify({'status': 'online', 'versao': '1.0'})
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
