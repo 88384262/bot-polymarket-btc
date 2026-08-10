@@ -3,149 +3,214 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BTC Signal Pro</title>
+    <title>Signal Pro - Sistema de Sinais</title>
     <link rel="stylesheet" href="style.css" />
-    <!-- Google AdSense (coloque seu código) -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXX" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 </head>
 <body>
-    <!-- TOPO -->
-    <header>
-        <div class="logo">⬡ SIGNAL PRO</div>
-        <nav>
-            <a href="#" class="active">PAINEL</a>
-            <a href="#">SINAIS</a>
-            <a href="#">HISTÓRICO</a>
-            <a href="#">ESTATÍSTICAS</a>
-            <a href="#">PLANOS</a>
-            <a href="#">CONFIGURAÇÕES</a>
-            <a href="#" class="btn-entrar">ENTRAR</a>
-            <a href="#" class="btn-cadastrar">CADASTRAR</a>
-        </nav>
-    </header>
-
-    <!-- CONTEÚDO PRINCIPAL -->
-    <main>
-        <!-- SINAL MAIS RECENTE -->
-        <section class="sinal-recente">
-            <div class="card-sinal">
-                <div class="cabecalho-sinal">
-                    <span class="badge-ao-vivo">● AO VIVO</span>
-                    <h2>BTC/USDT</h2>
-                    <span class="timeframe">5 MINUTOS</span>
-                </div>
-                <div class="corpo-sinal">
-                    <div class="preco-atual">
-                        <span class="label">PREÇO ATUAL</span>
-                        <span class="valor" id="preco">$--</span>
-                    </div>
-                    <div class="info-rapida">
-                        <div>
-                            <span class="label">TIME</span>
-                            <span class="valor" id="hora">--:--:--</span>
-                        </div>
-                        <div>
-                            <span class="label">EXPIRA EM</span>
-                            <span class="valor" id="expira">--:--</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="rodape-sinal">
-                    <div class="confianca" id="confianca">
-                        <span>CONFIANÇA</span>
-                        <span class="valor-confianca">--%</span>
-                        <span class="trend">↑</span>
-                    </div>
-                    <div class="estrategia">
-                        <span>ESTRATÉGIA</span>
-                        <span class="valor-estrategia">Momentum Pro</span>
-                    </div>
-                </div>
-            </div>
-            <!-- Propaganda ao lado do sinal -->
-            <div class="propaganda-destaque">
-                <ins class="adsbygoogle"
-                     style="display:block"
-                     data-ad-client="ca-pub-XXXXXXXXXX"
-                     data-ad-slot="XXXXXXXXXX"
-                     data-ad-format="auto"></ins>
-                <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-            </div>
-        </section>
-
-        <!-- ÚLTIMOS SINAIS EM TABELA -->
-        <section class="ultimos-sinais">
-            <h3>ÚLTIMOS SINAIS</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>ATIVO</th>
-                        <th>SINAL</th>
-                        <th>CONFIANÇA</th>
-                        <th>TIMEFRAME</th>
-                        <th>HORÁRIO</th>
-                        <th>RESULTADO</th>
-                    </tr>
-                </thead>
-                <tbody id="tabela-sinais">
-                    <!-- Preenchido pelo JavaScript -->
-                </tbody>
-            </table>
-            <a href="#" class="ver-historico">VER HISTÓRICO COMPLETO →</a>
-        </section>
-
-        <!-- DESEMPENHO + PROPAGANDA -->
-        <section class="desempenho-e-ads">
-            <div class="desempenho">
-                <h3>DESEMPENHO DO SISTEMA</h3>
-                <div class="metricas">
-                    <div><span>SINAIS</span><strong id="total-sinais">0</strong></div>
-                    <div><span>ACERTOS</span><strong id="total-acertos">0</strong></div>
-                    <div><span>ERROS</span><strong id="total-erros">0</strong></div>
-                    <div><span>TAXA DE ACERTO</span><strong id="taxa-acerto">0%</strong></div>
-                </div>
-            </div>
-            <!-- Propaganda -->
-            <div class="propaganda-rodape">
-                <ins class="adsbygoogle"
-                     style="display:block"
-                     data-ad-client="ca-pub-XXXXXXXXXX"
-                     data-ad-slot="XXXXXXXXXX"
-                     data-ad-format="auto"></ins>
-                <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-            </div>
-        </section>
-
-        <!-- ÚLTIMOS SINAIS (cards) -->
-        <section class="cards-sinais">
-            <div id="cards-container">
-                <!-- Preenchido pelo JavaScript -->
-            </div>
-            <a href="#" class="ver-todos">VER TODOS →</a>
-        </section>
-    </main>
-
-    <!-- RODAPÉ -->
-    <footer>
-        <div class="footer-conteudo">
-            <div>
-                <h4>INVISTA COM INTELIGÊNCIA</h4>
-                <p>Ferramentas profissionais para traders exigentes.</p>
-            </div>
-            <div class="vantagens">
-                <div><span>📡</span> SINAIS 24/7</div>
-                <div><span>🎯</span> ALTA PRECISÃO</div>
-                <div><span>🛡️</span> GESTÃO DE RISCO</div>
-                <div><span>💬</span> SUPORTE</div>
-            </div>
-            <div class="redes">
-                <span>CONECTE-SE CONOSCO</span>
-                <a href="#">Telegram</a>
-                <a href="#">YouTube</a>
-            </div>
+    
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <div class="logo">
+            <i class="fas fa-chart-line"></i> SIGNAL <span>PRO</span>
+            <small>SISTEMA DE SINAIS</small>
         </div>
-        <div class="copyright">© 2026 BTC Signal Pro</div>
-    </footer>
+        <ul class="nav-links">
+            <li><a href="#" class="active">PAINEL</a></li>
+            <li><a href="#">SINAIS</a></li>
+            <li><a href="#">HISTÓRICO</a></li>
+            <li><a href="#">ESTATÍSTICAS</a></li>
+            <li><a href="#">PLANOS</a></li>
+            <li><a href="#">CONFIGURAÇÕES</a></li>
+        </ul>
+        <div class="nav-actions">
+            <button class="theme-toggle"><i class="fas fa-moon"></i></button>
+            <button class="btn-outline">ENTRAR</button>
+            <button class="btn-primary">CADASTRAR</button>
+        </div>
+        <div class="hamburger"><i class="fas fa-bars"></i></div>
+    </nav>
+
+    <main class="container">
+        
+        <!-- TOPO: SINAL ATUAL E PUB -->
+        <section class="top-grid">
+            <div class="card sinal-atual-card">
+                <div class="card-header">
+                    <div class="header-left">
+                        <h3><i class="fas fa-bolt"></i> SINAL MAIS RECENTE</h3>
+                        <span class="badge-live"><i class="fas fa-circle"></i> AO VIVO</span>
+                    </div>
+                </div>
+                
+                <div class="sinal-main-content">
+                    <div class="coin-info">
+                        <div class="coin-icon"><i class="fab fa-bitcoin"></i></div>
+                        <div>
+                            <h2>BTC/USDT</h2>
+                            <span class="timeframe-badge">5 MINUTOS</span>
+                        </div>
+                    </div>
+                    
+                    <div class="sinal-status-container" id="sinal-status-container">
+                        <span class="label">SINAL</span>
+                        <div class="sinal-value" id="sinal-direcao">
+                            <span class="loading-text">CARREGANDO...</span>
+                        </div>
+                    </div>
+
+                    <div class="confianca-container">
+                        <span class="label">CONFIANÇA</span>
+                        <div class="confianca-value" id="confianca-valor">
+                            <span class="loading-text">--%</span>
+                            <div class="gauge-ring"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sinal-footer-info">
+                    <div>
+                        <span class="label">PREÇO ATUAL</span>
+                        <span class="value preco" id="preco-atual">$ --</span>
+                    </div>
+                    <div>
+                        <span class="label">TIME</span>
+                        <span class="value" id="hora-atual">--:--:--</span>
+                    </div>
+                    <div>
+                        <span class="label">EXPIRA EM</span>
+                        <span class="value" id="expira-em">--:--</span>
+                    </div>
+                    <div>
+                        <span class="label">ESTRATÉGIA</span>
+                        <span class="value">Momentum Pro</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Publicidade 1 -->
+            <div class="card ad-card">
+                <div class="ad-content">
+                    <h4>Negocie com <span>SEGURANÇA</span></h4>
+                    <p>Plataforma confiável, rápida e com as melhores taxas.</p>
+                    <button class="btn-ad">ABRA SUA CONTA</button>
+                    <p class="ad-small">Seu capital, seu futuro.</p>
+                </div>
+                <div class="ad-overlay"></div>
+            </div>
+        </section>
+
+        <!-- MEIO: TABELA + DESEMPENHO -->
+        <section class="middle-grid">
+            <div class="card tabela-card">
+                <h3>ÚLTIMOS SINAIS</h3>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ATIVO</th>
+                                <th>SINAL</th>
+                                <th>CONFIANÇA</th>
+                                <th>TIMEFRAME</th>
+                                <th>HORÁRIO</th>
+                                <th>RESULTADO</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-body">
+                            <tr>
+                                <td colspan="6" style="text-align:center; color: #848e9c; padding: 20px;">Carregando sinais...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <button class="btn-ghost">VER HISTÓRICO COMPLETO <i class="fas fa-arrow-right"></i></button>
+            </div>
+
+            <div class="card desempenho-card">
+                <div class="desempenho-header">
+                    <h3>DESEMPENHO DO SISTEMA</h3>
+                    <select class="select-date"><option>Hoje</option></select>
+                </div>
+                
+                <div class="metrics-grid">
+                    <div class="metric-box">
+                        <span>SINAIS</span>
+                        <strong id="total-sinais">0</strong>
+                    </div>
+                    <div class="metric-box">
+                        <span>ACERTOS</span>
+                        <strong id="total-acertos" class="text-green">0</strong>
+                    </div>
+                    <div class="metric-box">
+                        <span>ERROS</span>
+                        <strong id="total-erros" class="text-red">0</strong>
+                    </div>
+                    <div class="metric-box">
+                        <span>TAXA DE ACERTO</span>
+                        <strong id="taxa-acerto" class="text-green">0%</strong>
+                    </div>
+                </div>
+                
+                <!-- Gráfico Fake para Estética -->
+                <div class="chart-area">
+                    <div class="chart-line">
+                        <div class="bar" style="height: 30%"></div>
+                        <div class="bar" style="height: 50%"></div>
+                        <div class="bar" style="height: 40%"></div>
+                        <div class="bar" style="height: 70%"></div>
+                        <div class="bar" style="height: 60%"></div>
+                        <div class="bar" style="height: 80%"></div>
+                        <div class="bar" style="height: 85%"></div>
+                    </div>
+                    <div class="chart-label">TAXA DE ACERTO (ÚLTIMOS 7 DIAS)</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PUBLICIDADE INFERIOR -->
+        <section class="ad-banner-container">
+            <div class="ad-banner">
+                <div class="ad-banner-text">
+                    <h3>INVISTA COM <span>INTELIGÊNCIA</span></h3>
+                    <p>Ferramentas profissionais para traders exigentes.</p>
+                    <button class="btn-ad-primary">SAIBA MAIS</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer>
+            <div class="footer-grid">
+                <div class="footer-item">
+                    <i class="fas fa-satellite-dish"></i>
+                    <h5>SINAIS 24/7</h5>
+                    <p>Monitoramento contínuo do mercado</p>
+                </div>
+                <div class="footer-item">
+                    <i class="fas fa-bullseye"></i>
+                    <h5>ALTA PRECISÃO</h5>
+                    <p>Algoritmos avançados e IA</p>
+                </div>
+                <div class="footer-item">
+                    <i class="fas fa-shield-alt"></i>
+                    <h5>GESTÃO DE RISCO</h5>
+                    <p>Estratégias com foco em preservação</p>
+                </div>
+                <div class="footer-item">
+                    <i class="fas fa-headset"></i>
+                    <h5>SUPORTE</h5>
+                    <p>Suporte dedicado para membros</p>
+                </div>
+                <div class="footer-item">
+                    <i class="fab fa-telegram-plane"></i>
+                    <h5>CONECTE-SE CONOSCO</h5>
+                    <a href="#">Telegram</a> <a href="#">YouTube</a>
+                </div>
+            </div>
+            <div class="copyright">© 2026 Signal Pro. Todos os direitos reservados.</div>
+        </footer>
+
+    </main>
 
     <script src="script.js"></script>
 </body>
