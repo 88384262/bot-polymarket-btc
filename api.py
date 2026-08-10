@@ -6,21 +6,51 @@ from datetime import datetime
 app = Flask(__name__)
 CORS(app)
 
-# MEMÓRIA DO SISTEMA (Onde os dados ficam guardados)
-MEMORY_STORAGE = {
-    'ultimo_sinal': None,
-    'historico': []
-}
+# ==========================================================
+# A CORREÇÃO MÁGICA: A MEMÓRIA DO SISTEMA
+# Essas variáveis vivem enquanto o servidor estiver rodando.
+# ==========================================================
+ULTIMO_SINAL = None
+HISTORICO_SINAIS = []
 
-# ==========================================
-# 1. ROTA QUE O SITE USA PARA LER OS DADOS
-# ==========================================
+# ==========================================================
+# ENDPOINT QUE O SCANNER USA PARA GRITAR
+# ==========================================================
+@app.route('/api/novo_sinal', methods=['POST'])
+def receber_sinal():
+    global ULTIMO_SINAL, HISTORICO_SINAIS
+    
+    dados = request.json
+    if not dados:
+        return jsonify({'erro': 'Sem dados'}), 400
+    
+    # Salva o sinal na memória global
+    ULTIMO_SINAL = dados
+    
+    # Guarda no histórico
+    HISTORICO_SINAIS.append(dados)
+    if len(HISTORICO_SINAIS) > 20: # Mantém só os últimos 20
+        HISTORICO_SINAIS = HISTORICO_SINAIS[-20:]
+        
+    return jsonify({'status': 'sinal recebido com sucesso!'}), 201
+
+# ==========================================================
+# ENDPOINT QUE O SEU SITE USA PARA LER
+# ==========================================================
 @app.route('/api/sinais', methods=['GET'])
 def get_sinais():
-    sinal = MEMORY_STORAGE.get('ultimo_sinal')
-    historico = MEMORY_STORAGE.get('historico', [])[-10:]
+    # Pega o que está guardado na memória
+    sinal_atual = ULTIMO_SINAL
+    historico = HISTORICO_SINAIS
     
-    if not sinal:
+    desempenho = {
+        'total': len(historico),
+        'acertos': 0, # Se quiser contabilizar acertos, precisa de lógica extra
+        'erros': 0,
+        'taxa': 0
+    }
+    
+    if not sinal_atual:
         return jsonify({
             'sinal_atual': {
                 'preco': '--',
@@ -32,36 +62,14 @@ def get_sinais():
                 'ativo': 'BTC/USDT'
             },
             'ultimos_sinais': [],
-            'desempenho': {'total': 0, 'acertos': 0, 'erros': 0, 'taxa': 0}
+            'desempenho': desempenho
         })
-    
-    # Se tiver sinal, devolve ele para o site
+        
     return jsonify({
-        'sinal_atual': sinal,
+        'sinal_atual': sinal_atual,
         'ultimos_sinais': historico,
-        'desempenho': {'total': len(historico), 'acertos': 0, 'erros': 0, 'taxa': 0}
+        'desempenho': desempenho
     })
-
-# ==========================================
-# 2. ROTA QUE O SCANNER USA PARA ENVIAR O SINAL
-# ==========================================
-@app.route('/api/novo_sinal', methods=['POST'])
-def receber_sinal():
-    dados = request.json
-    if not dados:
-        return jsonify({'erro': 'Sem dados'}), 400
-    
-    # Salva o sinal novo na memória
-    MEMORY_STORAGE['ultimo_sinal'] = dados
-    
-    # Adiciona no histórico
-    hist = MEMORY_STORAGE.get('historico', [])
-    hist.append(dados)
-    if len(hist) > 50:
-        hist = hist[-50:]
-    MEMORY_STORAGE['historico'] = hist
-    
-    return jsonify({'status': 'ok'}), 201
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
