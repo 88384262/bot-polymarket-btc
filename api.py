@@ -1,111 +1,204 @@
-from flask import Flask, jsonify, make_response, request, send_from_directory
+from flask import Flask, jsonify, request
+from flask_cors import CORS
 import json
 import os
-import time
+from datetime import datetime
+import requests
 
+# ============================================
+# 1. INICIALIZAÇÃO DO FLASK
+# ============================================
 app = Flask(__name__)
+CORS(app)  # Permite que o site consulte a API
 
-ARQ_MERC = os.getenv("ARQ_MERC", "btc_mercados_v21.json")
-ARQ_MOD = os.getenv("ARQ_MOD", "btc_modelo_v21.json")
-ARQ_ATUAL = os.getenv("ARQ_MERCADO_ATUAL", "btc_mercado_atual.json")
-
-def ler_json(caminho, padrao={}):
+# ============================================
+# 2. FUNÇÃO PARA BUSCAR OS SINAIS DO SEU SCANNER
+# ============================================
+def buscar_ultimo_sinal():
+    """
+    Aqui você vai buscar o sinal mais recente do seu scanner.
+    Como você já tem um scanner_railway.py rodando, você pode:
+    
+    OPÇÃO A: Ler de um arquivo JSON
+    OPÇÃO B: Chamar diretamente as funções do scanner
+    OPÇÃO C: Ler de um banco de dados
+    """
+    
+    # --- OPÇÃO A: Ler de um arquivo JSON (RECOMENDADO) ---
     try:
-        with open(caminho, 'r') as f:
-            return json.load(f)
-    except:
-        return padrao
+        with open('ultimo_sinal.json', 'r') as f:
+            dados = json.load(f)
+            return dados
+    except FileNotFoundError:
+        # Se o arquivo não existir, retorna dados vazios
+        return None
+    
+    # --- OPÇÃO B: Chamar diretamente o scanner (se estiver no mesmo arquivo) ---
+    # from scanner_railway import obter_sinal
+    # return obter_sinal()
 
-def add_cors(response):
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-    response.headers["Cache-Control"] = "no-cache"
-    return response
 
-@app.route("/api/signals", methods=["GET", "OPTIONS"])
-def signals():
-    if request.method == "OPTIONS":
-        response = make_response("", 204)
-        return add_cors(response)
+def buscar_historico_sinais():
+    """
+    Busca o histórico de sinais.
+    """
+    try:
+        with open('historico_sinais.json', 'r') as f:
+            historico = json.load(f)
+            return historico
+    except FileNotFoundError:
+        return []
 
-    atual = ler_json(ARQ_ATUAL, {})
-    mercados = ler_json(ARQ_MERC, [])
-    modelo = ler_json(ARQ_MOD, {"acertos":0,"erros":0,"bank":0})
 
-    sinal = atual.get("sinal","")
-    current = None
-    if sinal in ("UP","DOWN"):
-        tf = atual.get("timestamp_fechamento",0)
-        tr = max(0, tf - time.time())
-        current = {
-            "type": "up" if sinal=="UP" else "down",
-            "confidence": int(atual.get("score",50)),
-            "price": round(atual.get("preco_abertura",0),2),
-            "expires_in": f"{int(tr//60):02d}:{int(tr%60):02d}",
-            "apostou": atual.get("apostou",False)
-        }
+def calcular_desempenho(historico):
+    """
+    Calcula estatísticas com base no histórico.
+    """
+    total = len(historico)
+    acertos = sum(1 for s in historico if s.get('resultado') == 'ACERTO')
+    erros = sum(1 for s in historico if s.get('resultado') == 'ERRO')
+    
+    taxa = round((acertos / total * 100), 2) if total > 0 else 0
+    
+    return {
+        'total': total,
+        'acertos': acertos,
+        'erros': erros,
+        'taxa': taxa
+    }
 
-    history = []
-    for m in reversed(mercados):
-        s = m.get("sinal","")
-        if not s: continue
-        a = m.get("apostou",False)
-        if not a: continue
-        r = m.get("resultado","")
-        res = "hit" if s==r else "miss"
-        from datetime import datetime
-        ta = m.get("timestamp_abertura",0)
-        hora = datetime.fromtimestamp(ta).strftime("%H:%M") if ta else "--:--"
-        history.append({
-            "type": "up" if s=="UP" else "down",
-            "confidence": int(m.get("score",50)),
-            "time": hora,
-            "result": res
+
+# ============================================
+# 3. ENDPOINT PRINCIPAL - /api/sinais
+# ============================================
+@app.route('/api/sinais', methods=['GET'])
+def get_sinais():
+    """
+    Endpoint que o site vai chamar para pegar os sinais.
+    """
+    
+    # Busca o sinal atual
+    sinal_atual = buscar_ultimo_sinal()
+    
+    # Busca o histórico
+    historico = buscar_historico_sinais()
+    
+    # Calcula o desempenho
+    desempenho = calcular_desempenho(historico)
+    
+    # Se não tiver sinal, retorna dados mockados para teste
+    if not sinal_atual:
+        return jsonify({
+            'sinal_atual': {
+                'preco': '67,842.35',
+                'hora': datetime.now().strftime('%H:%M:%S'),
+                'expira': '02:14',
+                'confianca': '87',
+                'estrategia': 'Momentum Pro',
+                'direcao': 'ALTA',
+                'ativo': 'BTC/USDT'
+            },
+            'ultimos_sinais': [
+                {'ativo': 'BTC/USDT', 'direcao': 'ALTA', 'confianca': '87', 'timeframe': '5 min', 'hora': '12:35', 'resultado': 'ACERTO'},
+                {'ativo': 'ETH/USDT', 'direcao': 'BAIXA', 'confianca': '81', 'timeframe': '5 min', 'hora': '12:30', 'resultado': 'ACERTO'},
+                {'ativo': 'SOL/USDT', 'direcao': 'ALTA', 'confianca': '74', 'timeframe': '5 min', 'hora': '12:25', 'resultado': 'ERRO'},
+            ],
+            'desempenho': {
+                'total': 37,
+                'acertos': 31,
+                'erros': 6,
+                'taxa': 83.78
+            }
         })
+    
+    # Monta a resposta com os dados reais
+    return jsonify({
+        'sinal_atual': {
+            'preco': sinal_atual.get('preco', '--'),
+            'hora': sinal_atual.get('hora', datetime.now().strftime('%H:%M:%S')),
+            'expira': sinal_atual.get('expira', '--:--'),
+            'confianca': sinal_atual.get('confianca', '--'),
+            'estrategia': sinal_atual.get('estrategia', 'Momentum Pro'),
+            'direcao': sinal_atual.get('direcao', 'ALTA'),  # 'ALTA' ou 'BAIXA'
+            'ativo': sinal_atual.get('ativo', 'BTC/USDT')
+        },
+        'ultimos_sinais': historico[-10:],  # Últimos 10 sinais
+        'desempenho': desempenho
+    })
 
-    history = history[:10]
-    hits = modelo.get("acertos",0)
-    misses = modelo.get("erros",0)
-    total = hits + misses
-    rate = round((hits/total)*100,2) if total else 0
 
-    response = make_response(jsonify({
-        "current": current,
-        "history": history,
-        "stats": {"total":total,"hits":hits,"misses":misses,"rate":rate}
-    }))
-    return add_cors(response)
-
-@app.route("/api/health", methods=["GET"])
-def health():
-    atual = ler_json(ARQ_ATUAL, {})
-    tem_dados = bool(atual.get("sinal"))
-    ts = atual.get("timestamp_abertura", 0)
-    idade = int(time.time() - ts) if ts else 9999
-    return add_cors(make_response(jsonify({
-        "status": "ok",
-        "scanner_online": tem_dados and idade < 600,
-        "last_update": idade
-    })))
-
-@app.route("/", methods=["GET"])
-def home():
+# ============================================
+# 4. ENDPOINT PARA RECEBER NOVOS SINAIS DO SCANNER
+# ============================================
+@app.route('/api/novo_sinal', methods=['POST'])
+def receber_novo_sinal():
+    """
+    Endpoint que seu scanner vai chamar quando detectar um novo sinal.
+    Assim o site sempre terá os dados mais atualizados.
+    """
+    dados = request.json
+    
+    if not dados:
+        return jsonify({'erro': 'Nenhum dado enviado'}), 400
+    
+    # Salva o sinal atual
+    with open('ultimo_sinal.json', 'w') as f:
+        json.dump(dados, f)
+    
+    # Adiciona ao histórico
     try:
-        return send_from_directory(".", "index.html")
-    except:
-        return add_cors(make_response("BTC Signal Pro API - Online"))
+        with open('historico_sinais.json', 'r') as f:
+            historico = json.load(f)
+    except FileNotFoundError:
+        historico = []
+    
+    # Adiciona o novo sinal com timestamp
+    novo_sinal = {
+        **dados,
+        'hora_recebido': datetime.now().strftime('%H:%M:%S'),
+        'resultado': 'PENDENTE'  # Você pode atualizar depois
+    }
+    
+    historico.append(novo_sinal)
+    
+    # Mantém apenas os últimos 100 sinais
+    if len(historico) > 100:
+        historico = historico[-100:]
+    
+    with open('historico_sinais.json', 'w') as f:
+        json.dump(historico, f)
+    
+    return jsonify({'status': 'Sinal recebido com sucesso!'}), 201
 
-@app.route("/health", methods=["GET"])
-def health_simple():
-    return add_cors(make_response(jsonify({"status":"ok"})))
 
-def run_api():
-    import threading
-    port = int(os.environ.get("PORT", 5000))
-    print(f"[API] Iniciando na porta {port}...")
-    def _run():
-        app.run(host="0.0.0.0", port=port, threaded=True, debug=False, use_reloader=False)
-    t = threading.Thread(target=_run, daemon=True)
-    t.start()
-    print(f"[API] Servidor iniciado em http://0.0.0.0:{port}")
+# ============================================
+# 5. ENDPOINT DE TESTE
+# ============================================
+@app.route('/api/status', methods=['GET'])
+def status():
+    """
+    Endpoint para verificar se a API está funcionando.
+    """
+    return jsonify({
+        'status': 'online',
+        'timestamp': datetime.now().isoformat(),
+        'versao': '1.0'
+    })
+
+
+# ============================================
+# 6. INICIALIZAÇÃO DO SERVIDOR
+# ============================================
+if __name__ == '__main__':
+    # Cria arquivos iniciais se não existirem
+    if not os.path.exists('ultimo_sinal.json'):
+        with open('ultimo_sinal.json', 'w') as f:
+            json.dump({}, f)
+    
+    if not os.path.exists('historico_sinais.json'):
+        with open('historico_sinais.json', 'w') as f:
+            json.dump([], f)
+    
+    # Roda o servidor
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
