@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Scanner Polymarket BTC v21.1 - VERSAO NUVEM (Railway)
+Scanner Polymarket BTC v21.2 - VERSAO NUVEM (Railway) + API
 - Sem limpar tela (nao tem terminal na nuvem)
 - Logs com timestamp
 - Salva btc_mercado_atual.json para o bot ler
 - Multiplas fontes de preco com retry e backoff
+- ENVIA SINAIS PARA API DO SITE
 """
 
 import requests
@@ -43,6 +44,65 @@ URL_CC = "https://min-api.cryptocompare.com/data/price?fsym=BTC&tsyms=USD"
 ARQ_MOD = "btc_modelo_v21.json"
 ARQ_MERC = "btc_mercados_v21.json"
 ARQ_MERCADO_ATUAL = "btc_mercado_atual.json"
+
+# ============================================================================
+# FUNÇÃO PARA ENVIAR SINAL PARA API 🔥
+# ============================================================================
+def enviar_sinal_para_api(direcao, preco, confianca, score, tendencia, rsi_valor, mom_valor):
+    """
+    Envia o sinal detectado para a API do site.
+    """
+    try:
+        # Formata o preço corretamente
+        preco_str = f"{preco:,.2f}".replace(',', '|').replace('.', ',').replace('|', '.')
+        
+        sinal = {
+            'preco': preco_str,
+            'hora': datetime.now().strftime('%H:%M:%S'),
+            'expira': '02:14',
+            'confianca': str(round(confianca, 1)),
+            'estrategia': 'Momentum Pro',
+            'direcao': direcao,  # 'ALTA' ou 'BAIXA'
+            'ativo': 'BTC/USDT',
+            'score': round(score, 1),
+            'tendencia': tendencia,
+            'rsi': round(rsi_valor, 1),
+            'mom': round(mom_valor, 2),
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        # URL da sua API - tenta as duas opções
+        urls = [
+            'https://bot-polymarket-btc.vercel.app/api/novo_sinal',
+            'http://localhost:5000/api/novo_sinal'
+        ]
+        
+        for url in urls:
+            try:
+                response = requests.post(
+                    url,
+                    json=sinal,
+                    headers={'Content-Type': 'application/json'},
+                    timeout=3
+                )
+                if response.status_code == 201:
+                    log(f"✅ Sinal enviado para API: {direcao} - ${preco:,.2f}")
+                    break
+            except:
+                continue
+            
+    except Exception as e:
+        log(f"⚠️ Erro ao enviar sinal para API: {e}")
+
+def salvar_sinal_local(sinal):
+    """
+    Salva o sinal em um arquivo JSON para o bot do Telegram e site.
+    """
+    try:
+        with open('ultimo_sinal.json', 'w') as f:
+            json.dump(sinal, f, indent=2)
+    except Exception as e:
+        log(f"Erro ao salvar sinal local: {e}")
 
 # ============================================================================
 # LOGS NA NUVEM
@@ -240,11 +300,15 @@ def travado(dados, lim=PRECO_TRAV_LIM):
 # MODELO
 # ============================================================================
 def carrega_mod():
+    global acertos, erros, bank
     if os.path.exists(ARQ_MOD):
         try:
             with open(ARQ_MOD, "r") as f:
                 d = json.load(f)
-            return d.get("acertos", 0), d.get("erros", 0), d.get("bank", 0.0)
+            acertos = d.get("acertos", 0)
+            erros = d.get("erros", 0)
+            bank = d.get("bank", 0.0)
+            return acertos, erros, bank
         except:
             pass
     return 0, 0, 0.0
@@ -449,6 +513,39 @@ def do_scan():
             merc_atual["tend"] = tend_v
             merc_atual["vs_open"] = vs
             log(f"APOSTA: {si} | Score: {sc:.1f} | BTC: ${btc:,.2f} | Tempo restante: {int(tr)}s | Fonte: {ult_fonte}")
+            
+            # ============================================================
+            # 🔥 ENVIA O SINAL PARA A API DO SITE E SALVA LOCALMENTE 🔥
+            # ============================================================
+            # Converte 'UP' para 'ALTA' e 'DOWN' para 'BAIXA' para exibição no site
+            direcao_exibicao = "ALTA" if si == "UP" else "BAIXA" if si == "DOWN" else si
+            
+            enviar_sinal_para_api(
+                direcao=direcao_exibicao,
+                preco=btc,
+                confianca=sc,
+                score=sc,
+                tendencia=tend_v,
+                rsi_valor=rsi_v,
+                mom_valor=mom_v
+            )
+            
+            # Salva localmente para o bot
+            sinal_local = {
+                'sinal': direcao_exibicao,
+                'preco': f"{btc:,.2f}",
+                'confianca': round(sc, 1),
+                'score': round(sc, 1),
+                'tendencia': tend_v,
+                'rsi': round(rsi_v, 1),
+                'mom': round(mom_v, 2),
+                'timestamp': datetime.now().isoformat(),
+                'fonte': ult_fonte,
+                'hora': datetime.now().strftime('%H:%M:%S')
+            }
+            salvar_sinal_local(sinal_local)
+            # ============================================================
+            
         elif not pd and not merc_atual.get("apostou", False):
             merc_atual["sinal"] = si
             merc_atual["vs_open"] = vs
@@ -468,7 +565,7 @@ def main():
     acertos, erros, bank = carrega_mod()
     carrega_merc()
     log("=" * 50)
-    log("SCANNER POLYMARKET BTC v21.1 - MODO NUVEM")
+    log("SCANNER POLYMARKET BTC v21.2 - MODO NUVEM + API")
     log(f"Stake: ${STAKE} | PAPER: {PAPER}")
     log("=" * 50)
     do_scan()
