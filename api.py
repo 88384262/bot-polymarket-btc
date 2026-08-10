@@ -6,7 +6,7 @@ from datetime import datetime
 app = Flask(__name__)
 CORS(app)
 
-# Armazenamento em memória (para evitar falhas de arquivos no Railway)
+# Armazenamento em memória RAM
 MEMORY_STORAGE = {
     'ultimo_sinal': None,
     'historico': []
@@ -17,7 +17,6 @@ def get_sinais():
     sinal = MEMORY_STORAGE.get('ultimo_sinal')
     historico = MEMORY_STORAGE.get('historico', [])[-10:]
     
-    # Desempenho fake para demonstração (ou calcule se quiser salvar resultado)
     total = len(historico)
     desempenho = {
         'total': total,
@@ -48,7 +47,7 @@ def get_sinais():
             'expira': sinal.get('expira', '--:--'),
             'confianca': str(sinal.get('confianca', '--')),
             'estrategia': sinal.get('estrategia', 'Momentum Pro'),
-            'direcao': sinal.get('sinal', '--'),
+            'direcao': sinal.get('direcao', '--'),
             'ativo': sinal.get('ativo', 'BTC/USDT')
         },
         'ultimos_sinais': historico,
@@ -61,9 +60,10 @@ def receber_sinal():
     if not dados:
         return jsonify({'erro': 'Sem dados'}), 400
     
-    # Salva na memória
+    # Salva sinal mais recente
     MEMORY_STORAGE['ultimo_sinal'] = dados
     
+    # Adiciona ao histórico
     novo = dados.copy()
     novo['resultado'] = 'PENDENTE'
     novo['data_recebido'] = datetime.now().isoformat()
