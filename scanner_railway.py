@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Scanner Polymarket BTC v21.0 - VERSAO NUVEM (Railway)
-- Sem limpar tela (nao tem terminal na nuvem)
-- Logs com timestamp
-- Salva btc_mercado_atual.json para o bot ler
+Scanner Polymarket BTC v21.0 - VERSAO NUVEM (Railway) + ENVIO API
+- Agora envia os sinais para o seu site em tempo real!
 """
 
 import requests
@@ -273,6 +271,35 @@ def pode_apostar(m, sc, s, mom_v, atr_p, tempo_r):
     return True, "ok"
 
 # ============================================================================
+# 🔥 ADIÇÃO: ENVIA SINAL PARA API 🔥
+# ============================================================================
+def enviar_sinal_api(sinal, preco, score, rsi_val, mom_val):
+    try:
+        url_api = "https://worker-production-9154.up.railway.app/api/novo_sinal"
+        
+        # Direção no formato que o site entende
+        direcao = "ALTA" if sinal == "UP" else "BAIXA"
+        
+        dados = {
+            'preco': f"{preco:,.2f}",
+            'hora': datetime.now().strftime('%H:%M:%S'),
+            'expira': '02:14',
+            'confianca': str(round(score, 1)),
+            'estrategia': 'Momentum Pro',
+            'direcao': direcao,
+            'ativo': 'BTC/USDT'
+        }
+        
+        response = requests.post(url_api, json=dados, timeout=3)
+        if response.status_code == 201:
+            log(f"✅ Sinal {direcao} enviado para o site com sucesso!")
+        else:
+            log(f"⚠️ Erro ao enviar sinal: Status {response.status_code}")
+            
+    except Exception as e:
+        log(f"Erro envio API: {e}")
+
+# ============================================================================
 # SALVA MERCADO ATUAL PARA O BOT
 # ============================================================================
 def salva_mercado_atual():
@@ -381,6 +408,7 @@ def do_scan():
         sc, si, rz = score_sinal(btc, vs, rsi_v, ema_v, bb_s, bb_i, mom_v, tend_v)
         merc_atual["score"] = sc
         pd, blk = pode_apostar(merc_atual, sc, si, mom_v, atr_p, tr)
+        
         if pd and not merc_atual.get("apostou", False):
             merc_atual["sinal"] = si
             merc_atual["stake"] = STAKE
@@ -391,8 +419,13 @@ def do_scan():
             merc_atual["tend"] = tend_v
             merc_atual["vs_open"] = vs
             log(f"APOSTA: {si} | Score: {sc:.1f} | BTC: ${btc:,.2f} | Tempo restante: {int(tr)}s")
+            
+            # 🔥 ENVIA O SINAL PARA O SITE NESTE MOMENTO 🔥
+            enviar_sinal_api(si, btc, sc, rsi_v, mom_v)
+            
         elif not pd and not merc_atual.get("apostou", False):
             merc_atual["sinal"] = si
+            
         # Atualiza campos para o bot ler
         merc_atual["vs_open"] = vs
         merc_atual["rsi"] = rsi_v
@@ -411,7 +444,7 @@ def main():
     acertos, erros, bank = carrega_mod()
     carrega_merc()
     log("=" * 50)
-    log("SCANNER POLYMARKET BTC v21 - MODO NUVEM")
+    log("SCANNER POLYMARKET BTC v21 - MODO NUVEM + ENVIO API")
     log(f"Stake: ${STAKE} | PAPER: {PAPER}")
     log("=" * 50)
     do_scan()
