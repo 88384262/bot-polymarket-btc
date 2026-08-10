@@ -2,33 +2,8 @@
 const API_URL = 'https://worker-production-9154.up.railway.app/api/sinais';
 
 // ==========================================================
-// DADOS MOCK DE BACKUP (Mínimo para não ficar em branco)
-// ==========================================================
-const MOCK_DATA = {
-    sinal_atual: {
-        preco: '67,842.35',
-        confianca: '87',
-        estrategia: 'Momentum Pro',
-        direcao: 'ALTA',
-        ativo: 'BTC/USDT',
-        hora: '--:--:--',
-        expira: '--:--'
-    },
-    ultimos_sinais: [
-        { ativo: 'BTC/USDT', direcao: 'ALTA', confianca: '87', timeframe: '5 min', hora: '--:--', resultado: 'ACERTO' }
-    ],
-    desempenho: {
-        total: 0,
-        acertos: 0,
-        erros: 0,
-        taxa: 0
-    }
-};
-
-// ==========================================================
 // ESTADO DO SISTEMA (Controla o cronômetro real)
 // ==========================================================
-let ultimoDadosRecebidos = null;
 let segundosRestantes = 0;
 let contadorAtivo = false;
 
@@ -60,21 +35,19 @@ function renderizarSinal(sinal) {
         `;
 
         // ==========================================================
-        // CORREÇÃO DA HORA E EXPIRAÇÃO (100% VINDO DO SCANNER)
+        // 100% VINDO DO SCANNER (Nenhuma invenção)
         // ==========================================================
         
-        // 1. Exibe a hora EXATA que o scanner enviou (sem inventar nada)
+        // 1. Exibe a hora EXATA que o scanner enviou
         horaEl.textContent = sinal.hora || '--:--:--';
 
-        // 2. Se o scanner enviou um tempo de expiração, ativa o cronômetro real
+        // 2. Ativa o cronômetro baseado no valor enviado pelo scanner
         if (sinal.expira && sinal.expira !== '--:--') {
             const partes = sinal.expira.split(':');
             const mins = parseInt(partes[0]) || 0;
             const segs = parseInt(partes[1]) || 0;
-            
-            // Converte para segundos totais
             segundosRestantes = (mins * 60) + segs;
-            contadorAtivo = true; // Ativa o cronômetro
+            contadorAtivo = true; 
         } else {
             contadorAtivo = false;
             expiraEl.textContent = '--:--';
@@ -136,7 +109,7 @@ function renderizarDesempenho(desempenho) {
 }
 
 // ==========================================================
-// CRONÔMETRO DO SCANNER (Sem inventar hora, apenas conta o tempo enviado)
+// CRONÔMETRO DO SCANNER (Apenas conta o tempo enviado)
 // ==========================================================
 function atualizarCronometro() {
     if (contadorAtivo && segundosRestantes > 0) {
@@ -172,14 +145,7 @@ async function carregarDados() {
         renderizarDesempenho(data.desempenho);
 
     } catch (error) {
-        console.warn("⚠️ API falhou. Exibindo dados do último sinal.");
-        
-        // Se API cair e nunca tiver recebido nada, usa mock apenas para preencher
-        if (!ultimoDadosRecebidos) {
-            renderizarSinal(MOCK_DATA.sinal_atual);
-            renderizarTabela(MOCK_DATA.ultimos_sinais);
-            renderizarDesempenho(MOCK_DATA.desempenho);
-        }
+        console.warn("⚠️ API falhou. Aguardando scanner reconectar...");
     }
 }
 
