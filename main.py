@@ -1,56 +1,54 @@
-import os, time, multiprocessing
+import os
+import time
+import threading
+import sys
 
 print("="*60)
-print("BTC SIGNAL PRO - Scanner + Bot + API")
+print("🚀 BTC SIGNAL PRO - INICIADOR UNIFICADO")
 print("="*60)
 
 def run_api():
-    """API roda em processo separado - thread principal propria"""
-    print("[API] Iniciando servidor...")
+    print("[API] Iniciando servidor Flask via Waitress...")
     try:
-        import api
         from waitress import serve
+        import api
         port = int(os.environ.get("PORT", 5000))
         serve(api.app, host="0.0.0.0", port=port, threads=4)
-    except ImportError:
-        print("[API] Waitress nao encontrado, usando Flask dev...")
-        import api
-        port = int(os.environ.get("PORT", 5000))
-        api.app.run(host="0.0.0.0", port=port, threaded=True, debug=False, use_reloader=False)
     except Exception as e:
-        print(f"[API] Erro: {e}")
-        time.sleep(5)
+        print(f"[API] Erro fatal: {e}")
+        # Espera um pouco e tenta reiniciar a API sozinha
+        time.sleep(10)
+        run_api()
 
 def run_scanner():
-    print("[+] Scanner iniciando...")
+    print("[SCANNER] Iniciando...")
     while True:
         try:
             import scanner_railway
             scanner_railway.main()
         except Exception as e:
-            print(f"[!] Scanner erro: {e}")
+            print(f"[SCANNER] Erro: {e}")
             time.sleep(10)
 
 def run_bot():
-    print("[+] Bot Telegram iniciando...")
+    print("[BOT] Iniciando Telegram...")
     while True:
         try:
             import bot_telegram_railway
             bot_telegram_railway.main()
         except Exception as e:
-            print(f"[!] Bot erro: {e}")
+            print(f"[BOT] Erro fatal (reiniciando em 15s): {e}")
             time.sleep(15)
 
 if __name__ == "__main__":
-    # API em PROCESSO SEPARADO (thread principal propria)
-    api_proc = multiprocessing.Process(target=run_api)
-    api_proc.start()
-    print(f"[+] API iniciada em processo PID {api_proc.pid}")
+    # API roda na thread principal (imprescindível para o Waitress)
+    api_thread = threading.Thread(target=run_api, daemon=False)
+    api_thread.start()
 
-    # Scanner em thread (dentro do processo principal)
-    import threading
+    # Scanner e Bot rodam em threads daemon
     threading.Thread(target=run_scanner, daemon=True).start()
+    threading.Thread(target=run_bot, daemon=True).start()
 
-    # Bot Telegram no PROCESSO PRINCIPAL (thread principal - asyncio precisa disso)
-    print("[+] Bot no processo principal...")
-    run_bot()
+    # Mantém o script principal rodando para sempre
+    while True:
+        time.sleep(1)
