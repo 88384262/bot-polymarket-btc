@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-BOT TELEGRAM - v20.7 COMPATIBLE - COM BLOQUEIO DE CONFLITO
+BOT TELEGRAM - TRAVA DE CONFLITO VIA REDIS
 """
 
 import json
@@ -9,7 +9,7 @@ import os
 import time
 import asyncio
 import requests
-import threading
+import redis
 from datetime import datetime, timezone, timedelta
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
@@ -22,10 +22,11 @@ VALOR_PIX = float(os.getenv("VALOR_PIX", "15.00"))
 DIAS_ACESSO = int(os.getenv("DIAS_ACESSO", "7"))
 ARQ_MERCADO_ATUAL = "btc_mercado_atual.json"
 ARQ_USUARIOS = "telegram_usuarios.json"
-ARQ_LOCK = "bot_lock.txt"  # Arquivo de bloqueio para evitar conflitos
+
+REDIS_URL = os.getenv("REDIS_URL", None)
 
 # =========================
-# UTILITÁRIOS
+# LOGS E UTILITÁRIOS
 # =========================
 def log(msg):
     ts = datetime.now().strftime("%H:%M:%S")
@@ -77,7 +78,7 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     if query.data == 'comprar':
         liberar_acesso(update.effective_user.id, DIAS_ACESSO)
-        await query.edit_message_text("✅ Acesso liberado com sucesso! (Simulação para teste)")
+        await query.edit_message_text("✅ Acesso liberado com sucesso!")
 
 # =========================
 # MONITOR DE SINAIS
@@ -97,7 +98,7 @@ async def enviar_sinais(application):
                     try:
                         await application.bot.send_message(chat_id=int(uid), text=msg)
                     except: pass
-                await asyncio.sleep(300) # Aguarda 5 min para não floodar
+                await asyncio.sleep(300)
             await asyncio.sleep(5)
         except Exception as e:
             log(f"Erro monitor: {e}")
@@ -108,35 +109,46 @@ async def post_init(application: Application):
     asyncio.create_task(enviar_sinais(application))
 
 # =========================
-# MAIN (COM BLOQUEIO DE CONFLITO)
+# MAIN (TRAVA REDIS DEFINITIVA)
 # =========================
 def main():
     if TOKEN_BOT == "SEU_TOKEN_AQUI":
         print("ERRO: TOKEN_BOT não configurado!")
         return
 
-    # 🔒 BLOQUEIO DE CONFLITO: Se o arquivo de lock existir, não inicia
-    if os.path.exists(ARQ_LOCK):
-        log("⚠️ Outra instância já está rodando. Saindo para evitar Conflict.")
-        return
-    
-    # Cria o arquivo de bloqueio
-    with open(ARQ_LOCK, 'w') as f:
-        f.write(str(os.getpid()))
-    log("🔒 Instância bloqueada com sucesso.")
+    # 🔒 TRAVA DE SEGURANÇA VIA REDIS
+    try:
+        if REDIS_URL:
+            r = redis.Redis.from_url(REDIS_URL, decode_responses=True)
+            # Tenta criar um lock que expira em 60 segundos
+            # Se o SET retornar False, significa que outro container já segurou o lock.
+            locked = r.set("telegram_bot_lock", "locked", nx=True, ex=60)
+            if not locked:
+                log("⚠️ Conflito detectado via Redis! Outra instância já está segurando o lock. Parando este processo.")
+                return
+            else:
+                log("🔒 Lock Redis adquirido com sucesso. Instância única autorizada a rodar.")
+        else:
+            log("⚠️ REDIS_URL não configurado. Rodando sem trava de segurança (risco de conflito).")
+    except Exception as e:
+        log(f"⚠️ Erro ao conectar ao Redis: {e}. Continuando sem trava.")
 
     try:
         application = Application.builder().token(TOKEN_BOT).post_init(post_init).build()
         application.add_handler(CommandHandler("start", cmd_start))
         application.add_handler(CallbackQueryHandler(callback_handler))
         
-        log("✅ Bot iniciado sem conflitos!")
         application.run_polling(drop_pending_updates=True)
+    except Exception as e:
+        log(f"Erro fatal no bot: {e}")
     finally:
-        # Remove o bloqueio quando o bot parar
-        if os.path.exists(ARQ_LOCK):
-            os.remove(ARQ_LOCK)
-            log("🔓 Bloqueio removido.")
+        # Remove o lock do Redis quando o bot parar
+        if REDIS_URL:
+            try:
+                r = redis.Redis.from_url(REDIS_URL, decode_responses=True)
+                r.delete("telegram_bot_lock")
+                log("🔓 Lock Redis removido.")
+            except: pass
 
 if __name__ == "__main__":
     main()
