@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Scanner Polymarket BTC v21.2 - VERSAO NUVEM (Railway) + API
+Scanner Polymarket BTC v21.0 - VERSAO NUVEM (Railway)
 - Sem limpar tela (nao tem terminal na nuvem)
 - Logs com timestamp
 - Salva btc_mercado_atual.json para o bot ler
-- Multiplas fontes de preco com retry e backoff
-- ENVIA SINAIS PARA API DO SITE
 """
 
 import requests
@@ -46,65 +44,6 @@ ARQ_MERC = "btc_mercados_v21.json"
 ARQ_MERCADO_ATUAL = "btc_mercado_atual.json"
 
 # ============================================================================
-# FUNÇÃO PARA ENVIAR SINAL PARA API 🔥
-# ============================================================================
-def enviar_sinal_para_api(direcao, preco, confianca, score, tendencia, rsi_valor, mom_valor):
-    """
-    Envia o sinal detectado para a API do site.
-    """
-    try:
-        # Formata o preço corretamente
-        preco_str = f"{preco:,.2f}".replace(',', '|').replace('.', ',').replace('|', '.')
-        
-        sinal = {
-            'preco': preco_str,
-            'hora': datetime.now().strftime('%H:%M:%S'),
-            'expira': '02:14',
-            'confianca': str(round(confianca, 1)),
-            'estrategia': 'Momentum Pro',
-            'direcao': direcao,  # 'ALTA' ou 'BAIXA'
-            'ativo': 'BTC/USDT',
-            'score': round(score, 1),
-            'tendencia': tendencia,
-            'rsi': round(rsi_valor, 1),
-            'mom': round(mom_valor, 2),
-            'timestamp': datetime.now().isoformat()
-        }
-        
-        # URL da sua API - tenta as duas opções
-        urls = [
-            'https://bot-polymarket-btc.vercel.app/api/novo_sinal',
-            'http://localhost:5000/api/novo_sinal'
-        ]
-        
-        for url in urls:
-            try:
-                response = requests.post(
-                    url,
-                    json=sinal,
-                    headers={'Content-Type': 'application/json'},
-                    timeout=3
-                )
-                if response.status_code == 201:
-                    log(f"✅ Sinal enviado para API: {direcao} - ${preco:,.2f}")
-                    break
-            except:
-                continue
-            
-    except Exception as e:
-        log(f"⚠️ Erro ao enviar sinal para API: {e}")
-
-def salvar_sinal_local(sinal):
-    """
-    Salva o sinal em um arquivo JSON para o bot do Telegram e site.
-    """
-    try:
-        with open('ultimo_sinal.json', 'w') as f:
-            json.dump(sinal, f, indent=2)
-    except Exception as e:
-        log(f"Erro ao salvar sinal local: {e}")
-
-# ============================================================================
 # LOGS NA NUVEM
 # ============================================================================
 def log(msg):
@@ -139,13 +78,11 @@ ult_fonte = "-"
 last_scan_ts = 0
 
 # ============================================================================
-# PRECO BTC - MULTIPLAS FONTES COM RETRY
+# PRECO BTC
 # ============================================================================
-HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
-
 def get_btc_chainlink():
     try:
-        r = requests.get(URL_CL, timeout=5, headers=HEADERS)
+        r = requests.get(URL_CL, timeout=5)
         r.raise_for_status()
         data = r.json()
         rounds = data.get("rounds", [])
@@ -156,72 +93,28 @@ def get_btc_chainlink():
         pass
     return None
 
-def get_btc_binance():
-    try:
-        r = requests.get("https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT", timeout=5, headers=HEADERS)
-        r.raise_for_status()
-        preco = float(r.json()["price"])
-        return preco, time.time()
-    except Exception:
-        pass
-    return None
-
-def get_btc_coinbase():
-    try:
-        r = requests.get("https://api.coinbase.com/v2/exchange-rates?currency=BTC", timeout=5, headers=HEADERS)
-        r.raise_for_status()
-        preco = float(r.json()["data"]["rates"]["USD"])
-        return preco, time.time()
-    except Exception:
-        pass
-    return None
-
-def get_btc_kraken():
-    try:
-        r = requests.get("https://api.kraken.com/0/public/Ticker?pair=XBTUSD", timeout=5, headers=HEADERS)
-        r.raise_for_status()
-        data = r.json()["result"]["XXBTZUSD"]
-        preco = float(data["c"][0])
-        return preco, time.time()
-    except Exception:
-        pass
-    return None
-
-def get_btc_coingecko():
-    try:
-        r = requests.get(URL_CG, timeout=10, headers=HEADERS)
-        r.raise_for_status()
-        preco = float(r.json()["bitcoin"]["usd"])
-        return preco, time.time()
-    except Exception:
-        pass
-    return None
-
-def get_btc_cryptocompare():
-    try:
-        r = requests.get(URL_CC, timeout=10, headers=HEADERS)
-        r.raise_for_status()
-        preco = float(r.json()["USD"])
-        return preco, time.time()
-    except Exception:
-        pass
-    return None
-
 def get_btc():
     global ult_fonte
-    fontes = [
-        (get_btc_binance, "Binance"),
-        (get_btc_coinbase, "Coinbase"),
-        (get_btc_kraken, "Kraken"),
-        (get_btc_chainlink, "Chainlink"),
-        (get_btc_coingecko, "CoinGecko"),
-        (get_btc_cryptocompare, "CryptoCompare"),
-    ]
-    for fn, nome in fontes:
-        result = fn()
-        if result:
-            ult_fonte = nome
-            return result
+    result = get_btc_chainlink()
+    if result:
+        ult_fonte = "Chainlink"
+        return result
+    try:
+        r = requests.get(URL_CG, timeout=10)
+        r.raise_for_status()
+        preco = float(r.json()["bitcoin"]["usd"])
+        ult_fonte = "CoinGecko"
+        return preco, time.time()
+    except Exception:
+        pass
+    try:
+        r = requests.get(URL_CC, timeout=10)
+        r.raise_for_status()
+        preco = float(r.json()["USD"])
+        ult_fonte = "CryptoCompare"
+        return preco, time.time()
+    except Exception:
+        pass
     if hist_btc:
         ult_fonte = "Cache"
         return hist_btc[-1], time.time()
@@ -300,15 +193,11 @@ def travado(dados, lim=PRECO_TRAV_LIM):
 # MODELO
 # ============================================================================
 def carrega_mod():
-    global acertos, erros, bank
     if os.path.exists(ARQ_MOD):
         try:
             with open(ARQ_MOD, "r") as f:
                 d = json.load(f)
-            acertos = d.get("acertos", 0)
-            erros = d.get("erros", 0)
-            bank = d.get("bank", 0.0)
-            return acertos, erros, bank
+                return d.get("acertos", 0), d.get("erros", 0), d.get("bank", 0.0)
         except:
             pass
     return 0, 0, 0.0
@@ -470,19 +359,8 @@ def fecha(m, btc, ts):
 
 def do_scan():
     global merc_atual, acertos, erros, bank, last_scan_ts
-    btc = None
-    ts = None
-    for tentativa in range(3):
-        try:
-            btc, ts = get_btc()
-            break
-        except Exception as e:
-            log(f"Tentativa {tentativa+1}/3 falhou: {e}")
-            time.sleep(2 ** tentativa)
-    else:
-        log("Erro no scan: Todas fontes falharam apos 3 tentativas")
-        return
     try:
+        btc, ts = get_btc()
         detecta(btc, ts)
         if merc_atual is None:
             return
@@ -512,47 +390,15 @@ def do_scan():
             merc_atual["mom"] = mom_v
             merc_atual["tend"] = tend_v
             merc_atual["vs_open"] = vs
-            log(f"APOSTA: {si} | Score: {sc:.1f} | BTC: ${btc:,.2f} | Tempo restante: {int(tr)}s | Fonte: {ult_fonte}")
-            
-            # ============================================================
-            # 🔥 ENVIA O SINAL PARA A API DO SITE E SALVA LOCALMENTE 🔥
-            # ============================================================
-            # Converte 'UP' para 'ALTA' e 'DOWN' para 'BAIXA' para exibição no site
-            direcao_exibicao = "ALTA" if si == "UP" else "BAIXA" if si == "DOWN" else si
-            
-            enviar_sinal_para_api(
-                direcao=direcao_exibicao,
-                preco=btc,
-                confianca=sc,
-                score=sc,
-                tendencia=tend_v,
-                rsi_valor=rsi_v,
-                mom_valor=mom_v
-            )
-            
-            # Salva localmente para o bot
-            sinal_local = {
-                'sinal': direcao_exibicao,
-                'preco': f"{btc:,.2f}",
-                'confianca': round(sc, 1),
-                'score': round(sc, 1),
-                'tendencia': tend_v,
-                'rsi': round(rsi_v, 1),
-                'mom': round(mom_v, 2),
-                'timestamp': datetime.now().isoformat(),
-                'fonte': ult_fonte,
-                'hora': datetime.now().strftime('%H:%M:%S')
-            }
-            salvar_sinal_local(sinal_local)
-            # ============================================================
-            
+            log(f"APOSTA: {si} | Score: {sc:.1f} | BTC: ${btc:,.2f} | Tempo restante: {int(tr)}s")
         elif not pd and not merc_atual.get("apostou", False):
             merc_atual["sinal"] = si
-            merc_atual["vs_open"] = vs
-            merc_atual["rsi"] = rsi_v
-            merc_atual["mom"] = mom_v
-            merc_atual["tend"] = tend_v
-            merc_atual["atr_p"] = atr_p
+        # Atualiza campos para o bot ler
+        merc_atual["vs_open"] = vs
+        merc_atual["rsi"] = rsi_v
+        merc_atual["mom"] = mom_v
+        merc_atual["tend"] = tend_v
+        merc_atual["atr_p"] = atr_p
         salva_mercado_atual()
     except Exception as e:
         log(f"Erro no scan: {e}")
@@ -565,7 +411,7 @@ def main():
     acertos, erros, bank = carrega_mod()
     carrega_merc()
     log("=" * 50)
-    log("SCANNER POLYMARKET BTC v21.2 - MODO NUVEM + API")
+    log("SCANNER POLYMARKET BTC v21 - MODO NUVEM")
     log(f"Stake: ${STAKE} | PAPER: {PAPER}")
     log("=" * 50)
     do_scan()
