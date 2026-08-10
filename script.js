@@ -1,44 +1,46 @@
-// URL da sua API (Se mudar no futuro, mude aqui)
+// URL da sua API
 const API_URL = 'https://worker-production-9154.up.railway.app/api/sinais';
 
 // ==========================================================
-// DADOS MOCK DE BACKUP (Para garantir que o site nunca fique branco)
+// DADOS MOCK DE BACKUP (Mínimo para não ficar em branco)
 // ==========================================================
 const MOCK_DATA = {
     sinal_atual: {
         preco: '67,842.35',
-        hora: '12:35:02',
-        expira: '02:14',
         confianca: '87',
         estrategia: 'Momentum Pro',
         direcao: 'ALTA',
-        ativo: 'BTC/USDT'
+        ativo: 'BTC/USDT',
+        hora: '--:--:--',
+        expira: '--:--'
     },
     ultimos_sinais: [
-        { ativo: 'BTC/USDT', direcao: 'ALTA', confianca: '87', timeframe: '5 min', hora: '12:35', resultado: 'ACERTO' },
-        { ativo: 'ETH/USDT', direcao: 'BAIXA', confianca: '81', timeframe: '5 min', hora: '12:30', resultado: 'ACERTO' },
-        { ativo: 'SOL/USDT', direcao: 'ALTA', confianca: '74', timeframe: '5 min', hora: '12:25', resultado: 'ERRO' },
-        { ativo: 'BNB/USDT', direcao: 'ALTA', confianca: '68', timeframe: '5 min', hora: '12:20', resultado: 'ACERTO' },
-        { ativo: 'XRP/USDT', direcao: 'BAIXA', confianca: '72', timeframe: '5 min', hora: '12:15', resultado: 'ACERTO' },
-        { ativo: 'ADA/USDT', direcao: 'ALTA', confianca: '83', timeframe: '5 min', hora: '12:10', resultado: 'ACERTO' }
+        { ativo: 'BTC/USDT', direcao: 'ALTA', confianca: '87', timeframe: '5 min', hora: '--:--', resultado: 'ACERTO' }
     ],
     desempenho: {
-        total: 37,
-        acertos: 31,
-        erros: 6,
-        taxa: 83.78
+        total: 0,
+        acertos: 0,
+        erros: 0,
+        taxa: 0
     }
 };
 
 // ==========================================================
-// FUNÇÕES DE RENDERIZAÇÃO (Desenham o visual)
+// ESTADO DO SISTEMA (Controla o cronômetro real)
+// ==========================================================
+let ultimoDadosRecebidos = null;
+let segundosRestantes = 0;
+let contadorAtivo = false;
+
+// ==========================================================
+// FUNÇÕES DE RENDERIZAÇÃO
 // ==========================================================
 function renderizarSinal(sinal) {
     const direcaoEl = document.getElementById('sinal-direcao');
     const precoEl = document.getElementById('preco-atual');
+    const confiancaEl = document.getElementById('confianca-valor');
     const horaEl = document.getElementById('hora-atual');
     const expiraEl = document.getElementById('expira-em');
-    const confiancaEl = document.getElementById('confianca-valor');
 
     if(sinal && sinal.direcao && sinal.direcao !== '--') {
         const isUp = sinal.direcao === 'ALTA';
@@ -49,8 +51,6 @@ function renderizarSinal(sinal) {
             </span>
         `;
         precoEl.textContent = `$ ${sinal.preco || '0.00'}`;
-        horaEl.textContent = sinal.hora || '--:--:--';
-        expiraEl.textContent = sinal.expira || '--:--';
         
         const conf = parseInt(sinal.confianca) || 0;
         const cor = conf > 70 ? '#2ecc71' : (conf > 50 ? '#f1c40f' : '#e74c3c');
@@ -58,15 +58,42 @@ function renderizarSinal(sinal) {
             <span style="color: ${cor};">${sinal.confianca || 0}%</span>
             <div class="gauge-ring" style="border-top-color: ${cor};"></div>
         `;
+
+        // ==========================================================
+        // CORREÇÃO DA HORA E EXPIRAÇÃO (100% VINDO DO SCANNER)
+        // ==========================================================
+        
+        // 1. Exibe a hora EXATA que o scanner enviou (sem inventar nada)
+        horaEl.textContent = sinal.hora || '--:--:--';
+
+        // 2. Se o scanner enviou um tempo de expiração, ativa o cronômetro real
+        if (sinal.expira && sinal.expira !== '--:--') {
+            const partes = sinal.expira.split(':');
+            const mins = parseInt(partes[0]) || 0;
+            const segs = parseInt(partes[1]) || 0;
+            
+            // Converte para segundos totais
+            segundosRestantes = (mins * 60) + segs;
+            contadorAtivo = true; // Ativa o cronômetro
+        } else {
+            contadorAtivo = false;
+            expiraEl.textContent = '--:--';
+        }
+
     } else {
-        direcaoEl.innerHTML = `<span class="loading-text">AGUARDANDO...</span>`;
+        direcaoEl.innerHTML = `<span class="loading-text" style="color: #848e9c;">AGUARDANDO...</span>`;
+        precoEl.textContent = '$ --';
+        confiancaEl.innerHTML = `<span style="color: #848e9c;">--%</span><div class="gauge-ring" style="border-top-color: #848e9c;"></div>`;
+        document.getElementById('hora-atual').textContent = '--:--:--';
+        document.getElementById('expira-em').textContent = '--:--';
+        contadorAtivo = false;
     }
 }
 
 function renderizarTabela(historico) {
     const tabelaBody = document.getElementById('tabela-body');
     if (!historico || historico.length === 0) {
-        tabelaBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#848e9c; padding:20px;">Nenhum sinal registrado</td></tr>`;
+        tabelaBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#848e9c; padding:20px;">Aguardando primeiro sinal real do scanner...</td></tr>`;
         return;
     }
     
@@ -80,15 +107,11 @@ function renderizarTabela(historico) {
         if(isAcerto) { badgeClass = 'badge-acerto'; badgeText = '✅ ACERTO'; }
         else if(isErro) { badgeClass = 'badge-erro'; badgeText = '❌ ERRO'; }
 
-        // Ícone aleatório para estética
-        const icons = ['fab fa-bitcoin btc-icon', 'fab fa-ethereum eth-icon', 'fab fa-solana sol-icon', 'fab fa-bnb bnb-icon'];
-        const randomIcon = icons[Math.floor(Math.random() * icons.length)];
-
         return `
             <tr>
                 <td>
                     <div class="coin-small">
-                        <i class="${randomIcon}"></i> ${s.ativo || 'BTC/USDT'}
+                        <i class="fab fa-bitcoin btc-icon" style="color: #f7931a;"></i> BTC/USDT
                     </div>
                 </td>
                 <td>
@@ -113,34 +136,53 @@ function renderizarDesempenho(desempenho) {
 }
 
 // ==========================================================
-// LÓGICA PRINCIPAL (Tenta API, se falhar usa Mock)
+// CRONÔMETRO DO SCANNER (Sem inventar hora, apenas conta o tempo enviado)
+// ==========================================================
+function atualizarCronometro() {
+    if (contadorAtivo && segundosRestantes > 0) {
+        segundosRestantes--;
+        
+        const mins = String(Math.floor(segundosRestantes / 60)).padStart(2, '0');
+        const segs = String(segundosRestantes % 60).padStart(2, '0');
+        document.getElementById('expira-em').textContent = `${mins}:${segs}`;
+        
+        if (segundosRestantes === 0) {
+            contadorAtivo = false;
+            document.getElementById('expira-em').textContent = '00:00';
+        }
+    }
+}
+// Atualiza o cronômetro a cada 1 segundo
+setInterval(atualizarCronometro, 1000);
+
+// ==========================================================
+// LÓGICA PRINCIPAL (Busca API)
 // ==========================================================
 async function carregarDados() {
     try {
-        // Tenta buscar na API
         const response = await fetch(API_URL);
-        if (!response.ok) throw new Error("Erro HTTP " + response.status);
+        if (!response.ok) throw new Error("Erro HTTP");
         
         const data = await response.json();
-        console.log("✅ API conectada! Dados recebidos:", data);
+        console.log("✅ Dados reais recebidos do scanner:", data);
 
-        // Renderiza com os dados REAIS da API
+        // Atualiza o painel com os dados do scanner
         renderizarSinal(data.sinal_atual);
         renderizarTabela(data.ultimos_sinais);
         renderizarDesempenho(data.desempenho);
 
     } catch (error) {
-        console.warn("⚠️ API falhou. Usando dados MOCK (Backup)...", error);
+        console.warn("⚠️ API falhou. Exibindo dados do último sinal.");
         
-        // Renderiza com os dados MOCK (para o site nunca ficar vazio)
-        renderizarSinal(MOCK_DATA.sinal_atual);
-        renderizarTabela(MOCK_DATA.ultimos_sinais);
-        renderizarDesempenho(MOCK_DATA.desempenho);
+        // Se API cair e nunca tiver recebido nada, usa mock apenas para preencher
+        if (!ultimoDadosRecebidos) {
+            renderizarSinal(MOCK_DATA.sinal_atual);
+            renderizarTabela(MOCK_DATA.ultimos_sinais);
+            renderizarDesempenho(MOCK_DATA.desempenho);
+        }
     }
 }
 
-// Inicia a verificação
+// Inicia a verificação da API (a cada 10 segundos)
 carregarDados();
-
-// Atualiza automaticamente a cada 10 segundos
 setInterval(carregarDados, 10000);
